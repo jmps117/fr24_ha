@@ -1,0 +1,24 @@
+[project]
+name = "fr24-tracker"
+version = "1.0.0"
+description = "FR24 Flight Tracker — Home Assistant custom integration"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "pytest-homeassistant-custom-component>=0.13",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["custom_components.fr24_tracker"]

@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "FR24 Flight Tracker",
+        "description": "Connect to your FR24 feeder's local API.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "scan_interval": "Scan interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the FR24 feeder. Check the host and port."
+    },
+    "abort": {
+      "already_configured": "This feeder is already configured."
+    }
+  }
+}
