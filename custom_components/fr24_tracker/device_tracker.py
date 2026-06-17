@@ -3,6 +3,7 @@ import logging
 from homeassistant.components.device_tracker import SourceType, TrackerEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -18,26 +19,38 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: FR24DataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    known: set[str] = set()
+    tracked: dict[str, FR24TrackerEntity] = {}
 
     @callback
-    def _check_for_new_aircraft() -> None:
+    def _update_entities() -> None:
+        current_feed = set(coordinator.data.keys())
+
+        # Add entities for newly positioned aircraft
         new = [
             FR24TrackerEntity(coordinator, icao)
             for icao, data in coordinator.data.items()
-            if icao not in known and data["latitude"] is not None
+            if icao not in tracked and data["latitude"] is not None
         ]
         for entity in new:
-            known.add(entity.icao)
+            tracked[entity.icao] = entity
         if new:
             async_add_entities(new)
 
-    coordinator.async_add_listener(_check_for_new_aircraft)
-    _check_for_new_aircraft()
+        # Remove entities for aircraft that have left the feed entirely
+        registry = er.async_get(hass)
+        for icao in list(tracked):
+            if icao not in current_feed:
+                entity = tracked.pop(icao)
+                if entity.entity_id:
+                    registry.async_remove(entity.entity_id)
+
+    coordinator.async_add_listener(_update_entities)
+    _update_entities()
 
 
 class FR24TrackerEntity(CoordinatorEntity, TrackerEntity):
     _attr_icon = "mdi:airplane"
+    _attr_entity_picture = "/local/plane.svg"
 
     def __init__(self, coordinator: FR24DataUpdateCoordinator, icao: str) -> None:
         super().__init__(coordinator)

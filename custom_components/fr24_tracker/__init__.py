@@ -4,7 +4,7 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN, CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
 from .coordinator import FR24DataUpdateCoordinator
 
-PLATFORMS = ["device_tracker", "sensor"]
+PLATFORMS = ["binary_sensor", "device_tracker", "sensor"]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
