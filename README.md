@@ -11,6 +11,9 @@ A Home Assistant custom integration that tracks aircraft from your local FR24 fe
 - Emergency squawk binary sensor — fires immediately on 7500 (hijacking), 7600 (radio failure), or 7700 (general emergency)
 - Flights list sensor exposing all aircraft as a structured attribute — enables Jinja2 dashboard templates
 - Live map via adsb.fi iframe with rotating icons — example dashboard included
+- Low altitude binary sensor — fires when any aircraft drops below a configurable threshold
+- Watched aircraft binary sensor — fires when a specific callsign or registration appears in the feed
+- Automation blueprints deployed automatically — ready to use from Settings → Automations → Blueprints
 - Automatic entity cleanup — entities are removed from the registry when aircraft leave the feed
 - Polls your local feeder every 30 seconds (configurable)
 - Config flow UI — no YAML needed
@@ -48,6 +51,8 @@ Copy `custom_components/fr24_tracker/` into your HA `config/custom_components/` 
 | `sensor.fr24_aircraft_with_position` | Sensor | Aircraft with a GPS position fix |
 | `sensor.fr24_nearest_aircraft` | Sensor | Distance (km) to nearest aircraft from your HA home location |
 | `sensor.fr24_current_flights` | Sensor | All aircraft as a structured `flights` list attribute |
+| `binary_sensor.fr24_low_altitude` | Binary Sensor | On when any aircraft is below the configured altitude threshold |
+| `binary_sensor.fr24_watched_aircraft` | Binary Sensor | On when a watched callsign or registration is in the feed |
 
 ## Dashboard
 
@@ -57,6 +62,32 @@ The example includes:
 - Stats and emergency squawk status
 - Markdown flight list — callsign, registration, operator, type, altitude, speed, climb/descend state — showing only positioned aircraft sorted high-to-low
 - Live adsb.fi map with rotating plane icons
+
+## Options
+
+After setup, click **Configure** on the integration card in Settings → Devices & Services to adjust:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| Low altitude threshold | 3000 m | Aircraft below this altitude trigger `binary_sensor.fr24_low_altitude` |
+| Low altitude radius | 0 (disabled) | Only count aircraft within this many km of your HA home location — 0 means no radius filter |
+| Watch list | *(empty)* | Comma-separated callsigns/registrations to watch for (e.g. `BAW123,G-EZWB`) — case-insensitive, matches on either |
+
+**Choosing a low altitude threshold:**
+
+| Threshold | Equivalent | What you'll catch |
+|-----------|------------|-------------------|
+| 5000 m | ~16 400 ft | Most aircraft on approach/departure within range |
+| 3000 m *(default)* | ~9 800 ft | Aircraft clearly in approach/departure phase or low transits |
+| 1500 m | ~5 000 ft | Noticeably low aircraft — GA circuits, helicopter ops |
+| 300 m | ~1 000 ft | Very low flying — military low-level, crop dusters, emergencies |
+
+## Blueprints
+
+Two automation blueprints are deployed automatically to `config/blueprints/automation/fr24_tracker/` on setup and available in Settings → Automations → Blueprints:
+
+- **FR24 Low Altitude Alert** — notify when aircraft drop below your threshold
+- **FR24 Watched Aircraft Alert** — notify when a watched callsign or registration appears
 
 ## Emergency squawk automation example
 

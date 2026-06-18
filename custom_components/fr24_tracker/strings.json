@@ -17,5 +17,17 @@
     "abort": {
       "already_configured": "This feeder is already configured."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "FR24 Flight Tracker Options",
+        "data": {
+          "low_altitude_threshold": "Low altitude threshold (metres)",
+          "low_altitude_radius": "Low altitude radius (km, 0 = no radius filter)",
+          "watch_list": "Watched callsigns / registrations (comma-separated)"
+        }
+      }
+    }
   }
 }

@@ -7,6 +7,13 @@ DEFAULT_SCAN_INTERVAL = 30
 CONF_HOST = "host"
 CONF_PORT = "port"
 CONF_SCAN_INTERVAL = "scan_interval"
+CONF_LOW_ALT_THRESHOLD = "low_altitude_threshold"
+CONF_LOW_ALT_RADIUS = "low_altitude_radius"
+CONF_WATCH_LIST = "watch_list"
+
+DEFAULT_LOW_ALT_THRESHOLD = 3000  # metres
+DEFAULT_LOW_ALT_RADIUS = 0  # km; 0 = no radius filter
+DEFAULT_WATCH_LIST = ""
 
 # flights.json array field indices
 F_ICAO = 0

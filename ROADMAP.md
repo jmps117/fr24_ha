@@ -29,10 +29,10 @@
 ## Planned
 
 ### v1.4.0 — Alerts & Automations
-Additional sensors and helpers to make automations easier:
-- Low altitude alert binary sensor (configurable threshold in metres)
-- Specific callsign/registration watch sensor — triggers when a named aircraft enters the feed
-- Example automation blueprints bundled with the integration
+- `binary_sensor.fr24_low_altitude` — on when any positioned aircraft is below a configurable altitude threshold (default 3000m); attributes include threshold in both metres and feet plus full aircraft details
+- `binary_sensor.fr24_watched_aircraft` — on when any aircraft's callsign or registration matches a user-defined watch list (comma-separated, case-insensitive)
+- Options flow — **Configure** button on the integration card in Devices & Services; sets low altitude threshold and watch list without reconfiguring the whole integration; changes take effect immediately via integration reload
+- Two automation blueprints deployed automatically to `config/blueprints/automation/fr24_tracker/` — low altitude alert and watched aircraft alert
 
 ### v1.5.0 — Aircraft Table Card
 Custom Lovelace card showing all currently tracked aircraft in a sortable table with enriched data (registration, type, operator, altitude, speed, heading). Installable via HACS as a frontend resource.

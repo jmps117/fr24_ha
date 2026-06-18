@@ -1,5 +1,4 @@
 import logging
-import math
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
@@ -9,6 +8,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import FR24DataUpdateCoordinator
+from .util import haversine_km
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,17 +27,6 @@ async def async_setup_entry(
             FR24CurrentFlightsSensor(coordinator, entry),
         ]
     )
-
-
-def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    R = 6371.0
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
-    )
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 class FR24TotalCountSensor(CoordinatorEntity, SensorEntity):
@@ -99,7 +88,7 @@ class FR24NearestAircraftSensor(CoordinatorEntity, SensorEntity):
         for ac in self.coordinator.data.values():
             if ac["latitude"] is None:
                 continue
-            d = _haversine_km(home_lat, home_lon, ac["latitude"], ac["longitude"])
+            d = haversine_km(home_lat, home_lon, ac["latitude"], ac["longitude"])
             if best_dist is None or d < best_dist:
                 best_dist = d
                 best_ac = ac

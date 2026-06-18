@@ -1,0 +1,29 @@
+blueprint:
+  name: FR24 Watched Aircraft Alert
+  description: Send a notification when a watched callsign or registration appears in the feed.
+  domain: automation
+  source_url: https://github.com/jmps117/fr24_ha/blob/main/custom_components/fr24_tracker/blueprints/watched_aircraft_alert.yaml
+  input:
+    notify_service:
+      name: Notification service
+      description: The notification service to call (e.g. notify.mobile_app_your_phone)
+      selector:
+        text:
+
+trigger:
+  - platform: state
+    entity_id: binary_sensor.fr24_watched_aircraft
+    to: "on"
+
+action:
+  - service: "{{ notify_service }}"
+    data:
+      title: "FR24 Watched Aircraft Spotted"
+      message: >-
+        {% set ac = trigger.to_state.attributes.aircraft %}
+        {% if ac | length > 0 %}
+        {{ ac[0].callsign or ac[0].registration or ac[0].icao }} is in the area
+        {%- if ac[0].operator %} ({{ ac[0].operator }}){%- endif %}
+        {%- if ac[0].aircraft_type %} — {{ ac[0].aircraft_type }}{%- endif %}
+        at {{ ac[0].altitude_ft }} ft
+        {% endif %}

@@ -1,21 +1,33 @@
 import aiohttp
 from homeassistant import config_entries
+from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
 from .const import (
     CONF_HOST,
+    CONF_LOW_ALT_RADIUS,
+    CONF_LOW_ALT_THRESHOLD,
     CONF_PORT,
     CONF_SCAN_INTERVAL,
+    CONF_WATCH_LIST,
     DEFAULT_HOST,
+    DEFAULT_LOW_ALT_RADIUS,
+    DEFAULT_LOW_ALT_THRESHOLD,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_WATCH_LIST,
     DOMAIN,
 )
 
 
 class FR24ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> "FR24OptionsFlow":
+        return FR24OptionsFlow()
 
     async def async_step_user(self, user_input=None):
         errors = {}
@@ -51,4 +63,34 @@ class FR24ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+        )
+
+
+class FR24OptionsFlow(config_entries.OptionsFlow):
+    async def async_step_init(self, user_input=None):
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_LOW_ALT_THRESHOLD,
+                        default=self.config_entry.options.get(
+                            CONF_LOW_ALT_THRESHOLD, DEFAULT_LOW_ALT_THRESHOLD
+                        ),
+                    ): int,
+                    vol.Required(
+                        CONF_LOW_ALT_RADIUS,
+                        default=self.config_entry.options.get(
+                            CONF_LOW_ALT_RADIUS, DEFAULT_LOW_ALT_RADIUS
+                        ),
+                    ): int,
+                    vol.Optional(
+                        CONF_WATCH_LIST,
+                        default=self.config_entry.options.get(CONF_WATCH_LIST, DEFAULT_WATCH_LIST),
+                    ): str,
+                }
+            ),
         )

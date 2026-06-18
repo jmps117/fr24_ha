@@ -1,0 +1,30 @@
+blueprint:
+  name: FR24 Low Altitude Alert
+  description: Send a notification when aircraft are detected below the configured altitude threshold.
+  domain: automation
+  source_url: https://github.com/jmps117/fr24_ha/blob/main/custom_components/fr24_tracker/blueprints/low_altitude_alert.yaml
+  input:
+    notify_service:
+      name: Notification service
+      description: The notification service to call (e.g. notify.mobile_app_your_phone)
+      selector:
+        text:
+
+trigger:
+  - platform: state
+    entity_id: binary_sensor.fr24_low_altitude
+    to: "on"
+
+action:
+  - service: "{{ notify_service }}"
+    data:
+      title: "FR24 Low Altitude Aircraft"
+      message: >-
+        {% set ac = trigger.to_state.attributes.aircraft %}
+        {% if ac | length > 0 %}
+        {{ ac[0].callsign or ac[0].icao }}
+        {%- if ac[0].registration %} ({{ ac[0].registration }}){%- endif %}
+        at {{ ac[0].altitude_ft }} ft ({{ ac[0].altitude_m }} m)
+        {%- if ac[0].aircraft_type %} — {{ ac[0].aircraft_type }}{%- endif %}
+        {% if ac | length > 1 %}and {{ ac | length - 1 }} more{% endif %}
+        {% endif %}

@@ -10,14 +10,25 @@ from .coordinator import FR24DataUpdateCoordinator
 PLATFORMS = ["binary_sensor", "device_tracker", "sensor"]
 
 
-def _deploy_www_assets(hass: HomeAssistant) -> None:
-    dst = Path(hass.config.path("www/fr24_tracker/plane.svg"))
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy(Path(__file__).parent / "plane.svg", dst)
+def _deploy_assets(hass: HomeAssistant) -> None:
+    base = Path(__file__).parent
+
+    www_dst = Path(hass.config.path("www/fr24_tracker/plane.svg"))
+    www_dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(base / "plane.svg", www_dst)
+
+    bp_dst = Path(hass.config.path("blueprints/automation/fr24_tracker"))
+    bp_dst.mkdir(parents=True, exist_ok=True)
+    for bp in (base / "blueprints").glob("*.yaml"):
+        shutil.copy(bp, bp_dst / bp.name)
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    await hass.async_add_executor_job(_deploy_www_assets, hass)
+    await hass.async_add_executor_job(_deploy_assets, hass)
 
     coordinator = FR24DataUpdateCoordinator(
         hass,
@@ -29,6 +40,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     return True
 
 
