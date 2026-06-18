@@ -19,19 +19,23 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: FR24DataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([
-        FR24TotalCountSensor(coordinator, entry),
-        FR24PositionedCountSensor(coordinator, entry),
-        FR24NearestAircraftSensor(coordinator, entry, hass),
-    ])
+    async_add_entities(
+        [
+            FR24TotalCountSensor(coordinator, entry),
+            FR24PositionedCountSensor(coordinator, entry),
+            FR24NearestAircraftSensor(coordinator, entry, hass),
+        ]
+    )
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     R = 6371.0
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
-    a = (math.sin(dlat / 2) ** 2
-         + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2)
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+    )
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
@@ -113,6 +117,9 @@ class FR24NearestAircraftSensor(CoordinatorEntity, SensorEntity):
         return {
             "icao": ac["icao"],
             "callsign": ac.get("callsign"),
+            "registration": ac.get("registration"),
+            "aircraft_type": ac.get("aircraft_type"),
+            "operator": ac.get("operator"),
             "altitude_ft": ac.get("altitude"),
             "speed_kts": ac.get("speed"),
             "track_deg": ac.get("track"),

@@ -1,13 +1,16 @@
 import aiohttp
-import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import voluptuous as vol
 
 from .const import (
+    CONF_HOST,
+    CONF_PORT,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
-    CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL,
-    DEFAULT_HOST, DEFAULT_PORT, DEFAULT_SCAN_INTERVAL,
 )
 
 
@@ -40,10 +43,12 @@ class FR24ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_HOST, default=DEFAULT_HOST): str,
-                vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
-                vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST, default=DEFAULT_HOST): str,
+                    vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
+                    vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
+                }
+            ),
             errors=errors,
         )

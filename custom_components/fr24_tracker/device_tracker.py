@@ -50,7 +50,7 @@ async def async_setup_entry(
 
 class FR24TrackerEntity(CoordinatorEntity, TrackerEntity):
     _attr_icon = "mdi:airplane"
-    _attr_entity_picture = "/local/plane.svg"
+    _attr_entity_picture = "/local/fr24_tracker/plane.svg"
 
     def __init__(self, coordinator: FR24DataUpdateCoordinator, icao: str) -> None:
         super().__init__(coordinator)
@@ -96,6 +96,10 @@ class FR24TrackerEntity(CoordinatorEntity, TrackerEntity):
         return {
             "icao": self.icao,
             "callsign": d.get("callsign"),
+            "registration": d.get("registration"),
+            "aircraft_type": d.get("aircraft_type"),
+            "icao_type": d.get("icao_type"),
+            "operator": d.get("operator"),
             "altitude_ft": d.get("altitude"),
             "speed_kts": d.get("speed"),
             "track_deg": d.get("track"),

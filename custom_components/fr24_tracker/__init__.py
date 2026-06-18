@@ -1,13 +1,24 @@
+from pathlib import Path
+import shutil
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+from .const import CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import FR24DataUpdateCoordinator
 
 PLATFORMS = ["binary_sensor", "device_tracker", "sensor"]
 
 
+def _deploy_www_assets(hass: HomeAssistant) -> None:
+    dst = Path(hass.config.path("www/fr24_tracker/plane.svg"))
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(Path(__file__).parent / "plane.svg", dst)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    await hass.async_add_executor_job(_deploy_www_assets, hass)
+
     coordinator = FR24DataUpdateCoordinator(
         hass,
         host=entry.data[CONF_HOST],

@@ -9,27 +9,20 @@
 - Config flow UI — no YAML required
 - Polls local FR24 feeder at configurable interval (default 30s)
 
----
-
-## In Progress
-
 ### v1.1.0
 - Plane icon on map instead of generic dot marker (`/local/plane.svg`)
 - Automatic entity cleanup — aircraft removed from entity registry when they leave the feed
 - Emergency squawk binary sensor (`binary_sensor.fr24_emergency_squawk`) — fires on 7500 (hijacking), 7600 (radio failure), 7700 (general emergency) with full aircraft details in attributes
 
+### v1.2.0 — Data Enrichment
+- Aircraft registration, ICAO type code, full type name, and operator added as attributes on all entities
+- Lookups via [hexdb.io](https://hexdb.io) — one request per new ICAO hex, cached for the session
+- Up to 4 concurrent enrichment requests with semaphore limiting
+- Cache misses recorded so unavailable ICAOs are not retried every poll cycle
+
 ---
 
 ## Planned
-
-### v1.2.0 — Data Enrichment
-Cross-reference each new ICAO hex against hexdb.io (primary) and OpenSky Network (fallback) to add:
-- Aircraft registration (e.g. `G-EZWB`)
-- ICAO type code (e.g. `A320`)
-- Full aircraft type (e.g. `Airbus A320 214`)
-- Operator / airline (e.g. `easyJet`)
-
-Lookups are cached indefinitely per ICAO hex as registration never changes, keeping API calls minimal.
 
 ### v1.3.0 — Rotating Map Icons
 Plane icons that rotate to match the aircraft's current heading on the map. Requires a compatible custom Lovelace map card from HACS. Target cards to investigate:
@@ -59,3 +52,4 @@ Store recent position history in the coordinator and render trail lines on the m
 - MLAT-only aircraft indicator (position less reliable)
 - Integration with ADS-B Exchange or other aggregators as an alternative data source
 - Geofence sensor — alert when any aircraft enters a defined radius around a point
+- Persistent enrichment cache (survive HA restarts via HA storage API)

@@ -43,15 +43,17 @@ class FR24EmergencySquawkSensor(CoordinatorEntity, BinarySensorEntity):
         for ac in self.coordinator.data.values():
             squawk = ac.get("squawk", "")
             if squawk in EMERGENCY_SQUAWKS:
-                result.append({
-                    "icao": ac["icao"],
-                    "callsign": ac.get("callsign"),
-                    "squawk": squawk,
-                    "description": EMERGENCY_SQUAWKS[squawk],
-                    "latitude": ac.get("latitude"),
-                    "longitude": ac.get("longitude"),
-                    "altitude_ft": ac.get("altitude"),
-                })
+                result.append(
+                    {
+                        "icao": ac["icao"],
+                        "callsign": ac.get("callsign"),
+                        "squawk": squawk,
+                        "description": EMERGENCY_SQUAWKS[squawk],
+                        "latitude": ac.get("latitude"),
+                        "longitude": ac.get("longitude"),
+                        "altitude_ft": ac.get("altitude"),
+                    }
+                )
         return result
 
     @property
