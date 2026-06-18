@@ -1,0 +1,36 @@
+type: vertical-stack
+title: FR24 Flight Tracker
+cards:
+  - type: entities
+    entities:
+      - entity: sensor.fr24_aircraft_tracked
+        name: In feed
+      - entity: sensor.fr24_aircraft_with_position
+        name: With position
+      - entity: sensor.fr24_nearest_aircraft
+        name: Nearest aircraft
+      - entity: binary_sensor.fr24_emergency_squawk
+        name: Emergency squawk
+
+  - type: conditional
+    conditions:
+      - condition: numeric_state
+        entity: sensor.fr24_current_flights
+        above: 0
+    card:
+      type: markdown
+      content: >-
+        {% set flights = state_attr('sensor.fr24_current_flights', 'flights') | default([], true) %}
+        {% for f in flights | selectattr('has_position') | sort(attribute='altitude_ft', reverse=true) %}
+        <ha-icon icon="mdi:airplane"></ha-icon> **{{ f.callsign or f.icao }}**
+        {%- if f.registration %} ({{ f.registration }}){%- endif %}
+        {%- if f.operator %} — {{ f.operator }}{%- endif %}
+        {%- if f.aircraft_type %} — {{ f.aircraft_type }}{%- endif %}
+
+        Altitude: {{ f.altitude_ft }} ft ({{ f.altitude_m }} m) | Speed: {{ f.speed_kts }} kts ({{ f.speed_kmh }} km/h) | {% if f.vertical_rate_fpm > 64 %}Climbing{% elif f.vertical_rate_fpm < -64 %}Descending{% else %}Level{% endif %}
+
+        {% endfor %}
+
+  - type: iframe
+    url: https://globe.adsb.fi/?enableLabels&trackLabels&zoom=10&hideSideBar&lat=LATITUDE&lon=LONGITUDE
+    aspect_ratio: 100%

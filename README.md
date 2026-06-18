@@ -1,15 +1,16 @@
 # FR24 Flight Tracker — Home Assistant Integration
 
-A Home Assistant custom integration that tracks aircraft from your local FR24 feeder, displays them on the HA map, and exposes enriched flight data for automations.
+A Home Assistant custom integration that tracks aircraft from your local FR24 feeder, displays them on the HA map, and exposes enriched flight data for automations and dashboards.
 
 ## Features
 
 - Live aircraft positions on the Home Assistant map (one `device_tracker` entity per aircraft with position fix)
-- Plane icon map markers — save a plane SVG to `/config/www/plane.svg` (see Map Setup below)
+- Plane icon map markers — deployed automatically to `www/fr24_tracker/plane.svg` on setup
 - Attributes per aircraft: callsign, registration, aircraft type, operator, altitude, speed, heading, squawk, vertical rate
 - Aircraft registration and type enriched via [hexdb.io](https://hexdb.io) — looked up once per ICAO hex and cached
 - Emergency squawk binary sensor — fires immediately on 7500 (hijacking), 7600 (radio failure), or 7700 (general emergency)
-- Sensors: total aircraft tracked, aircraft with position fix, distance to nearest aircraft
+- Flights list sensor exposing all aircraft as a structured attribute — enables Jinja2 dashboard templates
+- Live map via adsb.fi iframe with rotating icons — example dashboard included
 - Automatic entity cleanup — entities are removed from the registry when aircraft leave the feed
 - Polls your local feeder every 30 seconds (configurable)
 - Config flow UI — no YAML needed
@@ -46,10 +47,16 @@ Copy `custom_components/fr24_tracker/` into your HA `config/custom_components/` 
 | `sensor.fr24_aircraft_tracked` | Sensor | Total aircraft in the feed |
 | `sensor.fr24_aircraft_with_position` | Sensor | Aircraft with a GPS position fix |
 | `sensor.fr24_nearest_aircraft` | Sensor | Distance (km) to nearest aircraft from your HA home location |
+| `sensor.fr24_current_flights` | Sensor | All aircraft as a structured `flights` list attribute |
 
-## Map setup
+## Dashboard
 
-Add a **Map** card to your Lovelace dashboard — all `device_tracker.fr24_*` entities appear automatically as plane icons. The integration deploys the icon to your HA `www` folder automatically on first setup, no manual steps required.
+Copy `dashboard_example.yaml` from the repo into a **Manual** card in HA (Edit Dashboard → Add Card → Manual). Replace `LATITUDE` and `LONGITUDE` in the iframe URL with your coordinates.
+
+The example includes:
+- Stats and emergency squawk status
+- Markdown flight list — callsign, registration, operator, type, altitude, speed, climb/descend state — showing only positioned aircraft sorted high-to-low
+- Live adsb.fi map with rotating plane icons
 
 ## Emergency squawk automation example
 
@@ -71,5 +78,5 @@ action:
 
 - Aircraft without a position fix (received but out of ADS-B range) appear in the sensors but not on the map
 - Aircraft are removed from the entity registry when they leave the feed
-- Enrichment lookups (registration, type, operator) are made once per ICAO hex per session and cached — hexdb.io is queried at most 4 requests concurrently
-- The plane icon SVG is deployed automatically to `www/fr24_tracker/plane.svg` on first setup
+- Enrichment lookups (registration, type, operator) are made once per ICAO hex per session — hexdb.io is queried at most 4 requests concurrently
+- The plane icon SVG is redeployed on every HA restart to keep it in sync with the installed version

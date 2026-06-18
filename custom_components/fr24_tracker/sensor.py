@@ -24,6 +24,7 @@ async def async_setup_entry(
             FR24TotalCountSensor(coordinator, entry),
             FR24PositionedCountSensor(coordinator, entry),
             FR24NearestAircraftSensor(coordinator, entry, hass),
+            FR24CurrentFlightsSensor(coordinator, entry),
         ]
     )
 
@@ -126,3 +127,48 @@ class FR24NearestAircraftSensor(CoordinatorEntity, SensorEntity):
             "squawk": ac.get("squawk"),
             "vertical_rate_fpm": ac.get("vertical_rate"),
         }
+
+
+class FR24CurrentFlightsSensor(CoordinatorEntity, SensorEntity):
+    _attr_icon = "mdi:airplane"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "aircraft"
+
+    def __init__(self, coordinator: FR24DataUpdateCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_current_flights"
+        self._attr_name = "FR24 Current Flights"
+
+    @property
+    def native_value(self) -> int:
+        return len(self.coordinator.data) if self.coordinator.data else 0
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        if not self.coordinator.data:
+            return {"flights": []}
+        flights = []
+        for ac in self.coordinator.data.values():
+            alt_ft = ac.get("altitude") or 0
+            spd_kts = ac.get("speed") or 0
+            flights.append(
+                {
+                    "icao": ac["icao"],
+                    "callsign": ac.get("callsign"),
+                    "registration": ac.get("registration"),
+                    "aircraft_type": ac.get("aircraft_type"),
+                    "icao_type": ac.get("icao_type"),
+                    "operator": ac.get("operator"),
+                    "altitude_ft": alt_ft,
+                    "altitude_m": round(alt_ft * 0.3048),
+                    "speed_kts": spd_kts,
+                    "speed_kmh": round(spd_kts * 1.852),
+                    "track_deg": ac.get("track"),
+                    "vertical_rate_fpm": ac.get("vertical_rate"),
+                    "squawk": ac.get("squawk"),
+                    "latitude": ac.get("latitude"),
+                    "longitude": ac.get("longitude"),
+                    "has_position": ac.get("latitude") is not None,
+                }
+            )
+        return {"flights": flights}

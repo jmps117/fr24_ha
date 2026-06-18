@@ -10,7 +10,7 @@
 - Polls local FR24 feeder at configurable interval (default 30s)
 
 ### v1.1.0
-- Plane icon on map instead of generic dot marker (`/local/plane.svg`)
+- Plane icon on map instead of generic dot marker — deployed automatically to `www/fr24_tracker/plane.svg` on setup
 - Automatic entity cleanup — aircraft removed from entity registry when they leave the feed
 - Emergency squawk binary sensor (`binary_sensor.fr24_emergency_squawk`) — fires on 7500 (hijacking), 7600 (radio failure), 7700 (general emergency) with full aircraft details in attributes
 
@@ -20,14 +20,13 @@
 - Up to 4 concurrent enrichment requests with semaphore limiting
 - Cache misses recorded so unavailable ICAOs are not retried every poll cycle
 
+### v1.3.0 — Dashboard
+- `sensor.fr24_current_flights` — exposes all aircraft as a list attribute with ft/metric conversions pre-calculated, enabling Jinja2 dashboard templates
+- Example dashboard YAML (`dashboard_example.yaml`) — flights list markdown card + live map via adsb.fi iframe (rotating icons, no custom card required)
+
 ---
 
 ## Planned
-
-### v1.3.0 — Rotating Map Icons
-Plane icons that rotate to match the aircraft's current heading on the map. Requires a compatible custom Lovelace map card from HACS. Target cards to investigate:
-- `lovelace-map-card`
-- `ha-flightradar-card`
 
 ### v1.4.0 — Alerts & Automations
 Additional sensors and helpers to make automations easier:
@@ -53,3 +52,4 @@ Store recent position history in the coordinator and render trail lines on the m
 - Integration with ADS-B Exchange or other aggregators as an alternative data source
 - Geofence sensor — alert when any aircraft enters a defined radius around a point
 - Persistent enrichment cache (survive HA restarts via HA storage API)
+- Origin/destination lookup via callsign — requires a real-time flight data API (e.g. AviationStack free tier) since hexdb.io only provides static aircraft data; only applicable to aircraft with a callsign
