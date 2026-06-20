@@ -31,6 +31,12 @@ cards:
 
         {% endfor %}
 
-  - type: iframe
-    url: https://globe.adsb.fi/?enableLabels&trackLabels&zoom=10&hideSideBar&lat=LATITUDE&lon=LONGITUDE
-    aspect_ratio: 100%
+  # Feeder-only map — shows ONLY aircraft your radar has detected.
+  # No token or extra setup required; the card reads directly from HA state.
+  - type: custom:fr24-map-card
+
+  # Optional: wide-area context map from adsb.fi (shows ALL aircraft in the area,
+  # not just your feeder). Replace LATITUDE and LONGITUDE with your coordinates.
+  # - type: iframe
+  #   url: https://globe.adsb.fi/?enableLabels&trackLabels&zoom=10&hideSideBar&lat=LATITUDE&lon=LONGITUDE
+  #   aspect_ratio: 100%

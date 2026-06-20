@@ -1,6 +1,7 @@
 from pathlib import Path
 import shutil
 
+from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -9,13 +10,16 @@ from .coordinator import FR24DataUpdateCoordinator
 
 PLATFORMS = ["binary_sensor", "device_tracker", "sensor"]
 
+_CARD_URL = "/local/fr24_tracker/fr24-map-card.js"
+
 
 def _deploy_assets(hass: HomeAssistant) -> None:
     base = Path(__file__).parent
 
-    www_dst = Path(hass.config.path("www/fr24_tracker/plane.svg"))
-    www_dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy(base / "plane.svg", www_dst)
+    www_dir = Path(hass.config.path("www/fr24_tracker"))
+    www_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy(base / "plane.svg", www_dir / "plane.svg")
+    shutil.copy(base / "fr24-map-card.js", www_dir / "fr24-map-card.js")
 
     bp_dst = Path(hass.config.path("blueprints/automation/fr24_tracker"))
     bp_dst.mkdir(parents=True, exist_ok=True)
@@ -29,6 +33,7 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.async_add_executor_job(_deploy_assets, hass)
+    add_extra_js_url(hass, _CARD_URL)
 
     coordinator = FR24DataUpdateCoordinator(
         hass,

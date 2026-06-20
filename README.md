@@ -5,13 +5,13 @@ A Home Assistant custom integration that tracks aircraft from your local FR24 fe
 ## Features
 
 - Live aircraft positions on the Home Assistant map (one `device_tracker` entity per aircraft with position fix)
+- Feeder-only interactive map (`custom:fr24-map-card`) — shows **only** aircraft your radar has detected, with rotating icons and a click panel for full aircraft details; deployed and registered automatically, no token or manual resource setup required
 - Plane icon map markers — deployed automatically to `www/fr24_tracker/plane.svg` on setup
 - Attributes per aircraft: callsign, registration, aircraft type, operator, altitude, speed, heading, squawk, vertical rate
 - Aircraft registration and type enriched via [hexdb.io](https://hexdb.io) — looked up once per ICAO hex and cached
 - Emergency squawk binary sensor — fires immediately on 7500 (hijacking), 7600 (radio failure), or 7700 (general emergency)
 - Flights list sensor exposing all aircraft as a structured attribute — enables Jinja2 dashboard templates
-- Live map via adsb.fi iframe with rotating icons — example dashboard included
-- Low altitude binary sensor — fires when any aircraft drops below a configurable threshold
+- Low altitude binary sensor — fires when any aircraft drops below a configurable threshold; optional radius filter restricts it to aircraft within a set distance of your home
 - Watched aircraft binary sensor — fires when a specific callsign or registration appears in the feed
 - Automation blueprints deployed automatically — ready to use from Settings → Automations → Blueprints
 - Automatic entity cleanup — entities are removed from the registry when aircraft leave the feed
@@ -56,12 +56,30 @@ Copy `custom_components/fr24_tracker/` into your HA `config/custom_components/` 
 
 ## Dashboard
 
-Copy `dashboard_example.yaml` from the repo into a **Manual** card in HA (Edit Dashboard → Add Card → Manual). Replace `LATITUDE` and `LONGITUDE` in the iframe URL with your coordinates.
+Copy `dashboard_example.yaml` from the repo into a **Manual** card in HA (Edit Dashboard → Add Card → Manual).
 
 The example includes:
 - Stats and emergency squawk status
 - Markdown flight list — callsign, registration, operator, type, altitude, speed, climb/descend state — showing only positioned aircraft sorted high-to-low
-- Live adsb.fi map with rotating plane icons
+- Feeder-only interactive map — rotating plane icons, click for full aircraft details, only your radar's aircraft
+
+### Feeder map setup
+
+The map card (`fr24-map-card`) is deployed and registered automatically when the integration loads — no manual resource registration or token required. Add it to any dashboard with:
+
+```yaml
+type: custom:fr24-map-card
+```
+
+Optional configuration:
+
+```yaml
+type: custom:fr24-map-card
+zoom: 9          # initial zoom level (default: 9)
+height: 500px    # card height (default: 500px)
+```
+
+The card loads map tiles from OpenStreetMap, which requires the browser viewing the dashboard to have internet access. The HA server itself does not need internet access.
 
 ## Options
 
@@ -110,4 +128,4 @@ action:
 - Aircraft without a position fix (received but out of ADS-B range) appear in the sensors but not on the map
 - Aircraft are removed from the entity registry when they leave the feed
 - Enrichment lookups (registration, type, operator) are made once per ICAO hex per session — hexdb.io is queried at most 4 requests concurrently
-- The plane icon SVG is redeployed on every HA restart to keep it in sync with the installed version
+- The plane icon SVG and map card JS are redeployed on every HA restart to keep them in sync with the installed version

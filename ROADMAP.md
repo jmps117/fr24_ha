@@ -24,21 +24,27 @@
 - `sensor.fr24_current_flights` — exposes all aircraft as a list attribute with ft/metric conversions pre-calculated, enabling Jinja2 dashboard templates
 - Example dashboard YAML (`dashboard_example.yaml`) — flights list markdown card + live map via adsb.fi iframe (rotating icons, no custom card required)
 
----
-
-## Planned
-
 ### v1.4.0 — Alerts & Automations
 - `binary_sensor.fr24_low_altitude` — on when any positioned aircraft is below a configurable altitude threshold (default 3000m); attributes include threshold in both metres and feet plus full aircraft details
 - `binary_sensor.fr24_watched_aircraft` — on when any aircraft's callsign or registration matches a user-defined watch list (comma-separated, case-insensitive)
 - Options flow — **Configure** button on the integration card in Devices & Services; sets low altitude threshold and watch list without reconfiguring the whole integration; changes take effect immediately via integration reload
 - Two automation blueprints deployed automatically to `config/blueprints/automation/fr24_tracker/` — low altitude alert and watched aircraft alert
 
-### v1.5.0 — Aircraft Table Card
-Custom Lovelace card showing all currently tracked aircraft in a sortable table with enriched data (registration, type, operator, altitude, speed, heading). Installable via HACS as a frontend resource.
+---
 
-### v1.6.0 — Flight Path Trails
-Store recent position history in the coordinator and render trail lines on the map showing where each aircraft has been during the current session. Trail length configurable (default: 10 positions).
+## Planned
+
+### v1.5.0 — Feeder Map
+- `custom:fr24-map-card` — native Lovelace card showing **only** aircraft your feeder has detected; reads directly from `sensor.fr24_current_flights` via the `hass` object, no token or auth required
+- Rotating plane icons driven by heading, auto-centred on your HA home location
+- Click any aircraft for a full detail panel: callsign, registration, type, operator, altitude, speed, heading, vertical rate, squawk
+- Aircraft removed from the map when they leave the feed; live count badge in the corner
+- Card JS deployed automatically to `www/fr24_tracker/` and registered as a frontend resource on integration load — no manual resource setup needed
+- Works in the HA browser frontend and mobile app
+- Low altitude radius filter — optionally restrict `binary_sensor.fr24_low_altitude` to aircraft within a configurable distance (km) of your HA home location; 0 = no filter
+
+### v1.6.0 — Geofence Zones
+`binary_sensor.fr24_geofence` — on when any aircraft (or optionally only watched aircraft) enters a defined radius around a configurable point (defaults to HA home location). Radius and centre point configurable via options flow. Attributes include full aircraft details and distance. Enables automations that react to aircraft entering your local airspace without relying on altitude alone.
 
 ### v1.7.0 — Statistics & History
 - Sensors for peak aircraft counts, busiest time-of-day, most common aircraft types
@@ -50,6 +56,5 @@ Store recent position history in the coordinator and render trail lines on the m
 ## Ideas / Backlog
 - MLAT-only aircraft indicator (position less reliable)
 - Integration with ADS-B Exchange or other aggregators as an alternative data source
-- Geofence sensor — alert when any aircraft enters a defined radius around a point
 - Persistent enrichment cache (survive HA restarts via HA storage API)
 - Origin/destination lookup via callsign — requires a real-time flight data API (e.g. AviationStack free tier) since hexdb.io only provides static aircraft data; only applicable to aircraft with a callsign
