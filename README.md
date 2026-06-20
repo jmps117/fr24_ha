@@ -65,7 +65,14 @@ The example includes:
 
 ### Feeder map setup
 
-The map card (`fr24-map-card`) is deployed and registered automatically when the integration loads — no manual resource registration or token required. Add it to any dashboard with:
+The map card JS is deployed automatically to `www/fr24_tracker/` when the integration loads. You need to register it as a Lovelace resource once:
+
+1. Go to **Settings → Dashboards → Resources → Add Resource**
+2. URL: `/local/fr24_tracker/fr24-map-card.js`
+3. Type: **JavaScript Module**
+4. Save, then hard-refresh your browser (`Ctrl+Shift+R`)
+
+After that, add it to any dashboard with:
 
 ```yaml
 type: custom:fr24-map-card

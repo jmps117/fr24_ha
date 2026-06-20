@@ -1,7 +1,6 @@
 from pathlib import Path
 import shutil
 
-from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -9,8 +8,6 @@ from .const import CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERV
 from .coordinator import FR24DataUpdateCoordinator
 
 PLATFORMS = ["binary_sensor", "device_tracker", "sensor"]
-
-_CARD_URL = "/local/fr24_tracker/fr24-map-card.js"
 
 
 def _deploy_assets(hass: HomeAssistant) -> None:
@@ -33,7 +30,6 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.async_add_executor_job(_deploy_assets, hass)
-    add_extra_js_url(hass, _CARD_URL)
 
     coordinator = FR24DataUpdateCoordinator(
         hass,
