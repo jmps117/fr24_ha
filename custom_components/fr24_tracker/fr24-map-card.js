@@ -68,22 +68,27 @@
         await ensureLeaflet();
       } catch (e) {
         console.error('[fr24-map-card]', e);
-        this.style.display = 'block';
         this.innerHTML =
-          '<div style="padding:16px;color:#c62828;font-family:sans-serif">' +
+          '<ha-card><div style="padding:16px;color:#c62828;font-family:sans-serif">' +
           '<b>FR24 Map Card</b>: could not load Leaflet. ' +
-          'Check your browser has internet access for CDN resources.</div>';
+          'Check your browser has internet access for CDN resources.</div></ha-card>';
         return;
       }
 
-      // Build DOM
-      const height = this._config.height || '500px';
-      this.style.cssText = `display:block;position:relative;height:${height};`;
+      // Build DOM inside ha-card so Lovelace grid sizing works correctly
       this.innerHTML = '';
+      const height = this._config.height || '500px';
+
+      const card = document.createElement('ha-card');
+      this.appendChild(card);
+
+      const inner = document.createElement('div');
+      inner.style.cssText = `position:relative;height:${height};overflow:hidden;`;
+      card.appendChild(inner);
 
       this._mapEl = document.createElement('div');
       this._mapEl.style.cssText = 'height:100%;width:100%;';
-      this.appendChild(this._mapEl);
+      inner.appendChild(this._mapEl);
 
       this._badge = document.createElement('div');
       this._badge.style.cssText =
@@ -91,20 +96,26 @@
         'background:rgba(0,0,0,.55);color:#fff;font:13px/1 sans-serif;' +
         'padding:5px 10px;border-radius:12px;pointer-events:none;';
       this._badge.textContent = '— aircraft';
-      this.appendChild(this._badge);
+      inner.appendChild(this._badge);
 
       // Initialise Leaflet map
       const cfg  = this._hass.config;
       const zoom = this._config.zoom || 9;
       this._map  = L.map(this._mapEl).setView([cfg.latitude, cfg.longitude], zoom);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 18,
+      // CartoDB tiles — no Referer restrictions, works from local HA instances
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
+          '© <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19,
       }).addTo(this._map);
 
       this._ready = true;
       this._update();
+      // Recalculate map size after the DOM has settled
+      setTimeout(() => this._map.invalidateSize(), 100);
     }
 
     _icon(trackDeg) {
