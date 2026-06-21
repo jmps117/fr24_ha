@@ -1,5 +1,5 @@
 (function () {
-  const CARD_VERSION = '1.5.0';
+  const CARD_VERSION = '1.5.4';
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -101,30 +101,29 @@
       this._badge.textContent = '— aircraft';
       inner.appendChild(this._badge);
 
-      // Initialise Leaflet map
+      // Defer Leaflet map creation until the container has real dimensions.
+      // Initialising L.map() against a 0×0 container causes tile fragmentation
+      // even after invalidateSize() — creating it once the size is known is cleaner.
       const cfg  = this._hass.config;
       const zoom = this._config.zoom || 9;
-      this._map  = L.map(this._mapEl).setView([cfg.latitude, cfg.longitude], zoom);
 
-      // CartoDB tiles — no Referer restrictions, works from local HA instances
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution:
-          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
-          '© <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(this._map);
-
-      this._ready = true;
-      this._update();
-
-      // Fire invalidateSize when the container first gets real dimensions —
-      // Leaflet initialises against a 0×0 container before ha-card is laid out
       const ro = new ResizeObserver(() => {
-        if (this._mapEl.offsetWidth > 0) {
-          this._map.invalidateSize();
-          ro.disconnect();
-        }
+        if (this._mapEl.offsetWidth === 0) return;
+        ro.disconnect();
+
+        this._map = L.map(this._mapEl).setView([cfg.latitude, cfg.longitude], zoom);
+
+        // CartoDB tiles — no Referer restrictions, works from local HA instances
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          attribution:
+            '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
+            '© <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 19,
+        }).addTo(this._map);
+
+        this._ready = true;
+        this._update();
       });
       ro.observe(this._mapEl);
     }
