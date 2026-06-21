@@ -64,6 +64,9 @@
       if (this._starting) return;
       this._starting = true;
 
+      // Ensure block-level display so Lovelace grid sizes the card correctly
+      this.style.display = 'block';
+
       try {
         await ensureLeaflet();
       } catch (e) {
@@ -114,8 +117,16 @@
 
       this._ready = true;
       this._update();
-      // Recalculate map size after the DOM has settled
-      setTimeout(() => this._map.invalidateSize(), 100);
+
+      // Fire invalidateSize when the container first gets real dimensions —
+      // Leaflet initialises against a 0×0 container before ha-card is laid out
+      const ro = new ResizeObserver(() => {
+        if (this._mapEl.offsetWidth > 0) {
+          this._map.invalidateSize();
+          ro.disconnect();
+        }
+      });
+      ro.observe(this._mapEl);
     }
 
     _icon(trackDeg) {
