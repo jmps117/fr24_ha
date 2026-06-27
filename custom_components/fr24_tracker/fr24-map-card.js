@@ -1,5 +1,5 @@
 (function () {
-  const CARD_VERSION = '1.5.4';
+  const CARD_VERSION = '1.5.5';
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -64,7 +64,6 @@
       if (this._starting) return;
       this._starting = true;
 
-      // Ensure block-level display so Lovelace grid sizes the card correctly
       this.style.display = 'block';
 
       try {
@@ -72,26 +71,34 @@
       } catch (e) {
         console.error('[fr24-map-card]', e);
         this.innerHTML =
-          '<ha-card><div style="padding:16px;color:#c62828;font-family:sans-serif">' +
+          '<div style="padding:16px;color:#c62828;font-family:sans-serif">' +
           '<b>FR24 Map Card</b>: could not load Leaflet. ' +
-          'Check your browser has internet access for CDN resources.</div></ha-card>';
+          'Check your browser has internet access for CDN resources.</div>';
         return;
       }
 
-      // Build DOM inside ha-card so Lovelace grid sizing works correctly
       this.innerHTML = '';
       const height = this._config.height || '500px';
 
-      const card = document.createElement('ha-card');
+      // Plain div styled with HA CSS variables rather than <ha-card>.
+      // ha-card's shadow DOM was positioning slotted content ~46px above the host
+      // element, causing the top and bottom of the map to be clipped by overflow:hidden.
+      // isolation:isolate scopes Leaflet's z-indices (400-700) to this element so
+      // they don't bleed over sibling cards when the dashboard is scrolled.
+      const card = document.createElement('div');
+      card.style.cssText =
+        `height:${height};position:relative;overflow:hidden;isolation:isolate;` +
+        'background:var(--ha-card-background,var(--card-background-color,#fff));' +
+        'border-radius:var(--ha-card-border-radius,4px);' +
+        'box-shadow:var(--ha-card-box-shadow,' +
+          '0 2px 2px 0 rgba(0,0,0,.14),' +
+          '0 3px 1px -2px rgba(0,0,0,.12),' +
+          '0 1px 5px 0 rgba(0,0,0,.2))';
       this.appendChild(card);
 
-      const inner = document.createElement('div');
-      inner.style.cssText = `position:relative;height:${height};overflow:hidden;`;
-      card.appendChild(inner);
-
       this._mapEl = document.createElement('div');
-      this._mapEl.style.cssText = 'height:100%;width:100%;';
-      inner.appendChild(this._mapEl);
+      this._mapEl.style.cssText = `height:${height};width:100%;`;
+      card.appendChild(this._mapEl);
 
       this._badge = document.createElement('div');
       this._badge.style.cssText =
@@ -99,7 +106,7 @@
         'background:rgba(0,0,0,.55);color:#fff;font:13px/1 sans-serif;' +
         'padding:5px 10px;border-radius:12px;pointer-events:none;';
       this._badge.textContent = '— aircraft';
-      inner.appendChild(this._badge);
+      card.appendChild(this._badge);
 
       // Defer Leaflet map creation until the container has real dimensions.
       // Initialising L.map() against a 0×0 container causes tile fragmentation
@@ -107,8 +114,10 @@
       const cfg  = this._hass.config;
       const zoom = this._config.zoom || 9;
 
-      const ro = new ResizeObserver(() => {
-        if (this._mapEl.offsetWidth === 0) return;
+      const ro = new ResizeObserver(([entry]) => {
+        // Guard: skip until the grid column has settled to a real width,
+        // and never double-init if the observer fires a second time.
+        if (!entry.contentRect.width || this._map) return;
         ro.disconnect();
 
         this._map = L.map(this._mapEl).setView([cfg.latitude, cfg.longitude], zoom);
@@ -124,6 +133,11 @@
 
         this._ready = true;
         this._update();
+
+        // Two-pass invalidation: RAF catches next-frame layout shifts; the
+        // 400 ms timeout catches Lovelace grid settling that takes longer.
+        requestAnimationFrame(() => this._map.invalidateSize());
+        setTimeout(() => this._map && this._map.invalidateSize(), 400);
       });
       ro.observe(this._mapEl);
     }
