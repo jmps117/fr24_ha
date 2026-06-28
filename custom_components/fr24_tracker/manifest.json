@@ -1,7 +1,7 @@
 {
   "domain": "fr24_tracker",
   "name": "FR24 Flight Tracker",
-  "version": "1.5.5",
+  "version": "1.5.6",
   "documentation": "https://github.com/jmps117/fr24_ha",
   "issues_url": "https://github.com/jmps117/fr24_ha/issues",
   "requirements": [],

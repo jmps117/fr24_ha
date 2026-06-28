@@ -1,5 +1,5 @@
 (function () {
-  const CARD_VERSION = '1.5.5';
+  const CARD_VERSION = '1.5.6';
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -108,17 +108,25 @@
       this._badge.textContent = '— aircraft';
       card.appendChild(this._badge);
 
-      // Defer Leaflet map creation until the container has real dimensions.
-      // Initialising L.map() against a 0×0 container causes tile fragmentation
-      // even after invalidateSize() — creating it once the size is known is cleaner.
       const cfg  = this._hass.config;
       const zoom = this._config.zoom || 9;
 
-      const ro = new ResizeObserver(([entry]) => {
-        // Guard: skip until the grid column has settled to a real width,
-        // and never double-init if the observer fires a second time.
-        if (!entry.contentRect.width || this._map) return;
-        ro.disconnect();
+      // Poll this.offsetWidth each frame until it's stable across two consecutive
+      // frames. this.offsetWidth is set by the Lovelace grid column and only
+      // reaches its final value after grid layout is complete — avoiding the
+      // intermediate sizes that caused Leaflet to tile the wrong viewport.
+      let lastW = 0;
+      const waitForWidth = () => {
+        if (!this.isConnected) return;
+        const w = this.offsetWidth;
+        if (w === 0 || w !== lastW) {
+          lastW = w;
+          requestAnimationFrame(waitForWidth);
+          return;
+        }
+        // Pin mapEl to the exact grid-column pixel width so Leaflet always
+        // initialises with correct dimensions and never needs invalidateSize.
+        this._mapEl.style.width = w + 'px';
 
         this._map = L.map(this._mapEl).setView([cfg.latitude, cfg.longitude], zoom);
 
@@ -133,13 +141,18 @@
 
         this._ready = true;
         this._update();
+      };
+      requestAnimationFrame(waitForWidth);
+    }
 
-        // Two-pass invalidation: RAF catches next-frame layout shifts; the
-        // 400 ms timeout catches Lovelace grid settling that takes longer.
-        requestAnimationFrame(() => this._map.invalidateSize());
-        setTimeout(() => this._map && this._map.invalidateSize(), 400);
-      });
-      ro.observe(this._mapEl);
+    disconnectedCallback() {
+      if (this._map) {
+        this._map.remove();
+        this._map     = null;
+        this._markers = {};
+      }
+      this._ready    = false;
+      this._starting = false;
     }
 
     _icon(trackDeg) {
