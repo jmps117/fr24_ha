@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="custom_components/fr24_tracker/icon.png" alt="FR24 Flight Tracker" width="120">
+</p>
+
 # FR24 Flight Tracker — Home Assistant Integration
 
 A Home Assistant custom integration that tracks aircraft from your local FR24 feeder, displays them on the HA map, and exposes enriched flight data for automations and dashboards.
@@ -5,7 +9,7 @@ A Home Assistant custom integration that tracks aircraft from your local FR24 fe
 ## Features
 
 - Live aircraft positions on the Home Assistant map (one `device_tracker` entity per aircraft with position fix)
-- Feeder-only interactive map (`custom:fr24-map-card`) — shows **only** aircraft your radar has detected, with rotating icons and a click panel for full aircraft details; deployed and registered automatically, no token or manual resource setup required
+- Feeder-only interactive map (`custom:fr24-map-card`) — shows **only** aircraft your radar has detected, with rotating icons and a click panel for full aircraft details; no auth token required
 - Plane icon map markers — deployed automatically to `www/fr24_tracker/plane.svg` on setup
 - Attributes per aircraft: callsign, registration, aircraft type, operator, altitude, speed, heading, squawk, vertical rate
 - Aircraft registration and type enriched via [hexdb.io](https://hexdb.io) — looked up once per ICAO hex and cached
