@@ -40,14 +40,21 @@
 - Low altitude radius filter — optionally restrict `binary_sensor.fr24_low_altitude` to aircraft within a configurable distance (km) of your HA home location; 0 = no filter
 - Map tiles from CartoDB (Voyager); Leaflet loaded from unpkg.com CDN — browser needs internet, HA server does not
 
+### v1.6.0 — Map Card Stability
+- Rewrote `custom:fr24-map-card` internals to fix persistent rendering bugs (blank/misaligned map, shadow DOM getting overwritten by HA)
+- Card now uses its own shadow root with `<ha-card>` nested inside it, instead of avoiding shadow DOM entirely — gets HA's card chrome for free and stops HA's dashboard re-renders from clobbering the map
+- Map init is serialized and re-checks the DOM after Leaflet's async load, since HA can tear down and rebuild the card's DOM mid-init (dashboard edit mode, view switches)
+- Replaced the one-time width-polling hack with `invalidateSize()` calls after init and on layout-relevant updates — self-corrects if the container is resized later instead of only working if the very first measurement was stable
+- No user-facing config changes — `zoom` and `height` options behave the same
+
 ---
 
 ## Planned
 
-### v1.6.0 — Geofence Zones
+### v1.7.0 — Geofence Zones
 `binary_sensor.fr24_geofence` — on when any aircraft (or optionally only watched aircraft) enters a defined radius around a configurable point (defaults to HA home location). Radius and centre point configurable via options flow. Attributes include full aircraft details and distance. Enables automations that react to aircraft entering your local airspace without relying on altitude alone.
 
-### v1.7.0 — Statistics & History
+### v1.8.0 — Statistics & History
 - Sensors for peak aircraft counts, busiest time-of-day, most common aircraft types
 - Optional CSV logging of all tracked aircraft for long-term analysis
 - Dashboard card showing activity over time
