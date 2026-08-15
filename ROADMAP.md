@@ -40,7 +40,7 @@
 - Low altitude radius filter — optionally restrict `binary_sensor.fr24_low_altitude` to aircraft within a configurable distance (km) of your HA home location; 0 = no filter
 - Map tiles from CartoDB (Voyager); Leaflet loaded from unpkg.com CDN — browser needs internet, HA server does not
 
-### v1.6.0 — Map Card Stability
+### v1.6.1 — Map Card Stability
 - Rewrote `custom:fr24-map-card` internals to fix persistent rendering bugs (blank/misaligned map, shadow DOM getting overwritten by HA)
 - Card now uses its own shadow root with `<ha-card>` nested inside it, instead of avoiding shadow DOM entirely — gets HA's card chrome for free and stops HA's dashboard re-renders from clobbering the map
 - Map init is serialized and re-checks the DOM after Leaflet's async load, since HA can tear down and rebuild the card's DOM mid-init (dashboard edit mode, view switches)

@@ -4,7 +4,7 @@
   // invalidateSize() instead of pre-computed width) adapted from
   // AlexandrErohin/home-assistant-flightradar24's flightradar24-card.js
   // (MIT licensed, Copyright (c) 2023 AlexandrErohin).
-  const CARD_VERSION = '1.6.0';
+  const CARD_VERSION = '1.6.1';
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
