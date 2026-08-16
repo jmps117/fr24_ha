@@ -40,11 +40,13 @@
 - Low altitude radius filter — optionally restrict `binary_sensor.fr24_low_altitude` to aircraft within a configurable distance (km) of your HA home location; 0 = no filter
 - Map tiles from CartoDB (Voyager); Leaflet loaded from unpkg.com CDN — browser needs internet, HA server does not
 
-### v1.6.1 — Map Card Stability
+### v1.6.2 — Map Card Stability
 - Rewrote `custom:fr24-map-card` internals to fix persistent rendering bugs (blank/misaligned map, shadow DOM getting overwritten by HA)
 - Card now uses its own shadow root with `<ha-card>` nested inside it, instead of avoiding shadow DOM entirely — gets HA's card chrome for free and stops HA's dashboard re-renders from clobbering the map
 - Map init is serialized and re-checks the DOM after Leaflet's async load, since HA can tear down and rebuild the card's DOM mid-init (dashboard edit mode, view switches)
 - Replaced the one-time width-polling hack with `invalidateSize()` calls after init and on layout-relevant updates — self-corrects if the container is resized later instead of only working if the very first measurement was stable
+- Fixed the HA companion app specifically (desktop and mobile browsers were unaffected): its WebView doesn't fire `ResizeObserver`'s initial callback reliably, leaving the tile grid permanently misaligned with no later resize to correct it — a short backup sequence of `invalidateSize()` calls after init now catches that case too
+- Escaped externally-sourced popup fields (hexdb.io enrichment, ADS-B callsign/squawk) to close an HTML-injection hole, and fixed marker redraw being gated on the sensor's `last_changed` instead of `last_updated` (the former only bumps on aircraft-count changes, not position/heading updates, so the map could freeze in place)
 - No user-facing config changes — `zoom` and `height` options behave the same
 
 ---

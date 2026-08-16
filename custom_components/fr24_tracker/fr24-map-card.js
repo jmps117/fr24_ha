@@ -4,7 +4,7 @@
   // invalidateSize() instead of pre-computed width) adapted from
   // AlexandrErohin/home-assistant-flightradar24's flightradar24-card.js
   // (MIT licensed, Copyright (c) 2023 AlexandrErohin).
-  const CARD_VERSION = '1.6.1';
+  const CARD_VERSION = '1.6.2';
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -266,6 +266,17 @@
       // size settles.
       this._resizeObserver = new ResizeObserver(() => this._map?.invalidateSize());
       this._resizeObserver.observe(mapEl);
+
+      // Confirmed on the HA companion app's WebView: ResizeObserver's
+      // initial callback either doesn't fire or fires against a size that
+      // hasn't settled yet, and — unlike a real browser — nothing else ever
+      // triggers a later resize to correct it, leaving Leaflet's tile grid
+      // permanently misaligned. Browsers (desktop and mobile) don't need
+      // this; it's a bounded, self-cancelling safety net for the one
+      // environment that does, not a return to open-ended width polling.
+      for (const delay of [100, 500, 1500]) {
+        setTimeout(() => this._map?.invalidateSize(), delay);
+      }
       return this._map;
     }
 
