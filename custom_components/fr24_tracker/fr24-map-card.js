@@ -4,7 +4,7 @@
   // invalidateSize() instead of pre-computed width) adapted from
   // AlexandrErohin/home-assistant-flightradar24's flightradar24-card.js
   // (MIT licensed, Copyright (c) 2023 AlexandrErohin).
-  const CARD_VERSION = '1.7.0';
+  const CARD_VERSION = '1.8.0';
 
   // Mirrors EMERGENCY_SQUAWKS in binary_sensor.py — duplicated here because
   // the card is a standalone frontend file with no build step sharing code
@@ -463,15 +463,23 @@
     _popupHtml(f) {
       const vr    = f.vertical_rate_fpm;
       const climb = vr > 64 ? '▲ Climbing' : vr < -64 ? '▼ Descending' : '— Level';
-      // Callsign/squawk come from ADS-B broadcasts (spoofable over SDR) and
-      // registration/type/operator from the unauthenticated hexdb.io API —
-      // both are attacker-reachable strings rendered as HTML in the popup,
-      // so they must be escaped before interpolation.
+      // Callsign/squawk come from ADS-B broadcasts (spoofable over SDR), and
+      // registration/type/operator (hexdb.io) and route/airline (adsbdb.com)
+      // from unauthenticated third-party APIs — all attacker-reachable
+      // strings rendered as HTML in the popup, so they must be escaped
+      // before interpolation.
+      const route = (f.origin_iata && f.destination_iata)
+        ? `${this._escape(f.origin_iata)} → ${this._escape(f.destination_iata)}`
+        : '—';
+      const routeTitle = (f.origin_name && f.destination_name)
+        ? this._escape(`${f.origin_name} → ${f.destination_name}`)
+        : '';
       const rows  = [
         ['Callsign',     this._escape(f.callsign      || '—')],
         ['Registration', this._escape(f.registration  || '—')],
         ['Type',         this._escape(f.aircraft_type || '—')],
         ['Operator',     this._escape(f.operator      || '—')],
+        ['Route',        routeTitle ? `<span title="${routeTitle}">${route}</span>` : route],
         ['Altitude',     f.altitude_ft  != null
                            ? `${f.altitude_ft.toLocaleString()} ft / ${(f.altitude_m || 0).toLocaleString()} m`
                            : '—'],

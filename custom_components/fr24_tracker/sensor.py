@@ -158,6 +158,15 @@ class FR24CurrentFlightsSensor(CoordinatorEntity, SensorEntity):
                     "latitude": ac.get("latitude"),
                     "longitude": ac.get("longitude"),
                     "has_position": ac.get("latitude") is not None,
+                    "route_airline": ac.get("route_airline"),
+                    "origin_iata": ac.get("origin_iata"),
+                    "origin_icao": ac.get("origin_icao"),
+                    "origin_name": ac.get("origin_name"),
+                    "origin_municipality": ac.get("origin_municipality"),
+                    "destination_iata": ac.get("destination_iata"),
+                    "destination_icao": ac.get("destination_icao"),
+                    "destination_name": ac.get("destination_name"),
+                    "destination_municipality": ac.get("destination_municipality"),
                 }
             )
         return {"flights": flights}

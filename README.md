@@ -13,6 +13,7 @@ A Home Assistant custom integration that tracks aircraft from your local FR24 fe
 - Plane icon map markers — deployed automatically to `www/fr24_tracker/plane.svg` on setup
 - Attributes per aircraft: callsign, registration, aircraft type, operator, altitude, speed, heading, squawk, vertical rate
 - Aircraft registration and type enriched via [hexdb.io](https://hexdb.io) — looked up once per ICAO hex and cached
+- Origin/destination airport enriched via [adsbdb.com](https://www.adsbdb.com) — looked up once per callsign and cached; only available for aircraft broadcasting a callsign with a known scheduled route
 - Emergency squawk binary sensor — fires immediately on 7500 (hijacking), 7600 (radio failure), or 7700 (general emergency)
 - Flights list sensor exposing all aircraft as a structured attribute — enables Jinja2 dashboard templates
 - Low altitude binary sensor — fires when any aircraft drops below a configurable threshold; optional radius filter restricts it to aircraft within a set distance of your home
@@ -64,7 +65,7 @@ Copy `dashboard_example.yaml` from the repo into a **Manual** card in HA (Edit D
 
 The example includes:
 - Stats and emergency squawk status
-- Markdown flight list — callsign, registration, operator, type, altitude, speed, climb/descend state — showing only positioned aircraft sorted high-to-low
+- Markdown flight list — callsign, registration, operator, type, route (when known), altitude, speed, climb/descend state — showing only positioned aircraft sorted high-to-low
 - Feeder-only interactive map — rotating plane icons, click for full aircraft details, only your radar's aircraft
 
 ### Feeder map setup
@@ -146,4 +147,6 @@ action:
 - Aircraft without a position fix (received but out of ADS-B range) appear in the sensors but not on the map
 - Aircraft are removed from the entity registry when they leave the feed
 - Enrichment lookups (registration, type, operator) are made once per ICAO hex per session — hexdb.io is queried at most 4 requests concurrently
+- Route lookups (origin/destination) are made once per callsign per session — adsbdb.com is queried at most 4 requests concurrently; a miss (no known route, or no callsign) is cached too, so it isn't retried every poll
+- adsbdb.com's route coverage is scheduled commercial services with recognisable callsigns — charter, cargo, ferry/positioning, general aviation, business jets and military movements typically won't resolve to a route
 - The plane icon SVG and map card JS are redeployed on every HA restart to keep them in sync with the installed version

@@ -49,14 +49,26 @@
 - Escaped externally-sourced popup fields (hexdb.io enrichment, ADS-B callsign/squawk) to close an HTML-injection hole, and fixed marker redraw being gated on the sensor's `last_changed` instead of `last_updated` (the former only bumps on aircraft-count changes, not position/heading updates, so the map could freeze in place)
 - No user-facing config changes — `zoom` and `height` options behave the same
 
+### v1.6.3 / v1.6.4 — Tile Provider Fixes
+CartoDB's free anonymous tiles started requiring an API key (every style watermarked "API KEY REQUIRED"), and a same-day attempt to fall back to OSM's own tile servers got 403'd by their Referer usage policy. Landed on Esri's World Street Map tile service (`v1.6.4`) — free, no key, and empirically tolerant of the missing/LAN Referer that sank the other two.
+
+### v1.7.0 — Map Card Overlays
+- Flight trails — each aircraft's recent positions accumulated client-side (the feeder only reports current position, no history) and drawn as a polyline, capped at a configurable point count and reset on card reload
+- Altitude colouring — markers and trails shift red (low) to blue (high), same convention as FR24's own app and most ADS-B trackers; togglable
+- Emergency squawk highlight — 7500/7600/7700 gets a pulsing ring plus a highlighted popup row, independent of altitude colouring
+- Low-altitude radius circle — drawn from `binary_sensor.fr24_low_altitude`'s live `radius_km` attribute rather than a duplicated config value, so it can't drift out of sync; only shown when a radius is actually configured
+
 ---
 
 ## Planned
 
-### v1.7.0 — Geofence Zones
+### v1.8.0 — Origin/Destination Lookup — in progress
+Route (origin/destination airport) enrichment by callsign, added alongside the existing hexdb.io aircraft enrichment. Only applicable to aircraft broadcasting a callsign. hexdb.io only covers static aircraft data (registration/type/operator), not live routes, so this needs a second, real-time-aware source.
+
+### v1.9.0 — Geofence Zones
 `binary_sensor.fr24_geofence` — on when any aircraft (or optionally only watched aircraft) enters a defined radius around a configurable point (defaults to HA home location). Radius and centre point configurable via options flow. Attributes include full aircraft details and distance. Enables automations that react to aircraft entering your local airspace without relying on altitude alone.
 
-### v1.8.0 — Statistics & History
+### v1.10.0 — Statistics & History
 - Sensors for peak aircraft counts, busiest time-of-day, most common aircraft types
 - Optional CSV logging of all tracked aircraft for long-term analysis
 - Dashboard card showing activity over time
@@ -67,4 +79,3 @@
 - MLAT-only aircraft indicator (position less reliable)
 - Integration with ADS-B Exchange or other aggregators as an alternative data source
 - Persistent enrichment cache (survive HA restarts via HA storage API)
-- Origin/destination lookup via callsign — requires a real-time flight data API (e.g. AviationStack free tier) since hexdb.io only provides static aircraft data; only applicable to aircraft with a callsign

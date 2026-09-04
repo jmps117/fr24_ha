@@ -106,4 +106,9 @@ class FR24TrackerEntity(CoordinatorEntity, TrackerEntity):
             "squawk": d.get("squawk"),
             "vertical_rate_fpm": d.get("vertical_rate"),
             "last_seen": d.get("last_seen"),
+            "route_airline": d.get("route_airline"),
+            "origin_iata": d.get("origin_iata"),
+            "origin_name": d.get("origin_name"),
+            "destination_iata": d.get("destination_iata"),
+            "destination_name": d.get("destination_name"),
         }

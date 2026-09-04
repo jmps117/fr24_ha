@@ -26,6 +26,7 @@ cards:
         {%- if f.registration %} ({{ f.registration }}){%- endif %}
         {%- if f.operator %} — {{ f.operator }}{%- endif %}
         {%- if f.aircraft_type %} — {{ f.aircraft_type }}{%- endif %}
+        {%- if f.origin_iata and f.destination_iata %} — {{ f.origin_iata }} → {{ f.destination_iata }}{%- endif %}
 
         Altitude: {{ f.altitude_ft }} ft ({{ f.altitude_m }} m) | Speed: {{ f.speed_kts }} kts ({{ f.speed_kmh }} km/h) | {% if f.vertical_rate_fpm > 64 %}Climbing{% elif f.vertical_rate_fpm < -64 %}Descending{% else %}Level{% endif %}
 
