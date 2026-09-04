@@ -4,7 +4,7 @@
   // invalidateSize() instead of pre-computed width) adapted from
   // AlexandrErohin/home-assistant-flightradar24's flightradar24-card.js
   // (MIT licensed, Copyright (c) 2023 AlexandrErohin).
-  const CARD_VERSION = '1.6.3';
+  const CARD_VERSION = '1.6.4';
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -250,14 +250,17 @@
       const zoom = this._config.zoom ?? 9;
       this._map = L.map(mapEl).setView([cfg.latitude, cfg.longitude], zoom);
 
-      // CartoDB's free anonymous tiles started requiring an API key (returns
-      // a watermarked "API KEY REQUIRED" placeholder instead of a real map,
-      // confirmed 2026-09-04 — not a WebView-specific issue, plain curl hits
-      // the same watermark). Back to OSM's own tile CDN, which still serves
-      // unauthenticated requests fine.
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        subdomains: 'abc',
+      // CartoDB's free anonymous tiles now require an API key (every style
+      // watermarked "API KEY REQUIRED", confirmed 2026-09-04) and OSM's own
+      // tile servers 403 us with "Access blocked — Referer is required by
+      // tile usage policy" (confirmed same day, live in the HA dashboard —
+      // it isn't sending a Referer OSM will accept).
+      // Esri's free World Street Map tile service has no key and no Referer
+      // requirement — verified with empty Referer/User-Agent headers.
+      // Note the {z}/{y}/{x} order: Esri's REST tile API takes level/row/col,
+      // not Leaflet's usual {z}/{x}/{y}.
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © <a href="https://www.esri.com">Esri</a>',
         maxZoom: 19,
       }).addTo(this._map);
 

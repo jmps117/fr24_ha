@@ -90,7 +90,7 @@ zoom: 9          # initial zoom level (default: 9)
 height: 500px    # card height (default: 500px)
 ```
 
-The card loads map tiles from OpenStreetMap, which requires the browser viewing the dashboard to have internet access. The HA server itself does not need internet access.
+The card loads map tiles from Esri's World Street Map service, which requires the browser viewing the dashboard to have internet access. The HA server itself does not need internet access.
 
 ## Options
 
