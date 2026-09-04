@@ -4,7 +4,20 @@
   // invalidateSize() instead of pre-computed width) adapted from
   // AlexandrErohin/home-assistant-flightradar24's flightradar24-card.js
   // (MIT licensed, Copyright (c) 2023 AlexandrErohin).
-  const CARD_VERSION = '1.6.4';
+  const CARD_VERSION = '1.7.0';
+
+  // Mirrors EMERGENCY_SQUAWKS in binary_sensor.py — duplicated here because
+  // the card is a standalone frontend file with no build step sharing code
+  // with the backend.
+  const EMERGENCY_SQUAWK_LABELS = {
+    '7500': 'Hijacking',
+    '7600': 'Radio Failure',
+    '7700': 'General Emergency',
+  };
+  // Inlined from plane.svg so the marker's fill can be set dynamically
+  // (altitude colour) without an extra request per colour variant.
+  const PLANE_SVG_PATH =
+    'M21,16V14L13,9V3.5A1.5,1.5,0,0,0,11.5,2,1.5,1.5,0,0,0,10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5Z';
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -65,6 +78,8 @@
       this._initGeneration = 0;
       this._resizeObserver = null;
       this._markers        = {};
+      this._trails         = {};
+      this._lowAltCircle   = null;
       this._hass           = null;
       this._config         = {};
       this._configKey      = null;
@@ -77,16 +92,26 @@
     setConfig(config) {
       const nextConfig = config || {};
       const nextEntity = nextConfig.entity || 'sensor.fr24_current_flights';
-      const nextKey = `${nextEntity}|${nextConfig.zoom ?? ''}|${nextConfig.height ?? ''}`;
+      const nextKey = [
+        nextEntity,
+        nextConfig.zoom ?? '',
+        nextConfig.height ?? '',
+        nextConfig.show_trails ?? '',
+        nextConfig.trail_length ?? '',
+        nextConfig.color_by_altitude ?? '',
+        nextConfig.show_low_altitude_radius ?? '',
+        nextConfig.low_altitude_entity ?? '',
+      ].join('|');
 
       this._config   = nextConfig;
       this._entityId = nextEntity;
 
-      // Only entity/zoom/height affect the map itself — if one of those
-      // changed on an already-initialized card (e.g. live dashboard-editor
-      // reconfiguration), tear down so the next update rebuilds with the new
-      // values. On the very first setConfig() call there's nothing to compare
-      // against yet, so this is a no-op.
+      // Any field folded into nextKey affects the map or its overlays — if
+      // one changed on an already-initialized card (e.g. live dashboard-
+      // editor reconfiguration), tear down so the next update rebuilds with
+      // the new values (this also clears trail history and the tile layer,
+      // not just an in-place style tweak). On the very first setConfig()
+      // call there's nothing to compare against yet, so this is a no-op.
       if (this._configKey && this._configKey !== nextKey) {
         this._destroyMap();
       }
@@ -140,6 +165,12 @@
       }
       this._mapInitPromise = null;
       this._markers = {};
+      // Trails/circle are Leaflet layers on the map instance just removed —
+      // no separate .remove() needed, but the references must be dropped so
+      // a rebuilt map starts with fresh trail history rather than carrying
+      // stale points into markers that don't exist yet.
+      this._trails = {};
+      this._lowAltCircle = null;
       // A fresh teardown deserves a fresh attempt at loading Leaflet, and the
       // rebuilt map has drawn nothing yet regardless of whether the tracked
       // entity's state has changed since the last (now-discarded) map did.
@@ -162,6 +193,11 @@
           position: absolute; top: 10px; right: 10px; z-index: 1000;
           background: rgba(0,0,0,.55); color: #fff; font: 13px/1 sans-serif;
           padding: 5px 10px; border-radius: 12px; pointer-events: none;
+        }
+        @keyframes fr24-emergency-pulse {
+          0%   { transform: scale(0.9); opacity: .55; }
+          70%  { transform: scale(1.8); opacity: 0; }
+          100% { transform: scale(1.8); opacity: 0; }
         }
       `;
     }
@@ -285,17 +321,134 @@
       return this._map;
     }
 
-    _icon(trackDeg) {
+    // Red (low) through blue (high), same convention as FR24's own app and
+    // most ADS-B trackers (tar1090, etc.) — capped at a typical airliner
+    // cruise ceiling so anything above it just reads as "high" rather than
+    // compressing the whole low-altitude range into a sliver of the scale.
+    _altitudeColor(altFt) {
+      if (!Number.isFinite(altFt) || altFt <= 0) return '#888888';
+      const hue = Math.max(0, Math.min(1, altFt / 40000)) * 240;
+      return `hsl(${hue}, 85%, 45%)`;
+    }
+
+    _markerColor(f) {
+      return this._config.color_by_altitude === false
+        ? '#03a9f4'
+        : this._altitudeColor(f.altitude_ft);
+    }
+
+    // undefined for a non-emergency squawk — never falls through to
+    // Object.prototype (f.squawk is spoofable over SDR, so a garbled value
+    // like "constructor" or "toString" must not resolve to a truthy label).
+    _emergencyLabel(f) {
+      return Object.prototype.hasOwnProperty.call(EMERGENCY_SQUAWK_LABELS, f.squawk)
+        ? EMERGENCY_SQUAWK_LABELS[f.squawk]
+        : undefined;
+    }
+
+    _iconKey(f, color) {
+      return `${f.track_deg ?? 0}|${color}|${!!this._emergencyLabel(f)}`;
+    }
+
+    _icon(f, color) {
+      const ring = this._emergencyLabel(f)
+        ? '<div style="position:absolute;inset:-7px;border-radius:50%;' +
+          'background:var(--error-color, #d32f2f);opacity:.6;' +
+          'animation:fr24-emergency-pulse 1.2s ease-out infinite"></div>'
+        : '';
       return L.divIcon({
         className: '',
         html:
-          `<div style="transform:rotate(${trackDeg ?? 0}deg);` +
-          `width:28px;height:28px;display:flex;align-items:center;justify-content:center">` +
-          `<img src="/local/fr24_tracker/plane.svg" style="width:22px;height:22px" alt=""></div>`,
+          `<div style="position:relative;width:28px;height:28px;` +
+          `display:flex;align-items:center;justify-content:center">` +
+          ring +
+          `<div style="position:relative;transform:rotate(${f.track_deg ?? 0}deg);` +
+          `width:22px;height:22px;color:${color}">` +
+          `<svg viewBox="0 0 24 24" width="100%" height="100%">` +
+          `<path fill="currentColor" d="${PLANE_SVG_PATH}"/></svg>` +
+          `</div></div>`,
         iconSize:    [28, 28],
         iconAnchor:  [14, 14],
         popupAnchor: [0, -16],
       });
+    }
+
+    // Trails are accumulated client-side from successive poll snapshots —
+    // the feeder only ever reports current position, no history — so they
+    // reset on every card reconnect/reconfigure and are naturally capped to
+    // recent movement, which is what you want for a live "where are they
+    // right now and where did they just come from" view rather than a
+    // permanent flight-log overlay.
+    _updateTrail(map, f, color) {
+      if (this._config.show_trails === false) return;
+      const maxPoints = Math.max(2, Number(this._config.trail_length) || 20);
+      let trail = this._trails[f.icao];
+      if (!trail) {
+        trail = {
+          points: [],
+          line: L.polyline([], { weight: 2, opacity: 0.6 }).addTo(map),
+        };
+        this._trails[f.icao] = trail;
+      }
+      trail.points.push([f.latitude, f.longitude]);
+      if (trail.points.length > maxPoints) trail.points.shift();
+      trail.line.setLatLngs(trail.points);
+      trail.line.setStyle({ color });
+    }
+
+    _removeTrail(icao) {
+      const trail = this._trails[icao];
+      if (trail) {
+        trail.line.remove();
+        delete this._trails[icao];
+      }
+    }
+
+    // Mirrors CONF_LOW_ALT_RADIUS from the integration's own config — read
+    // off the low-altitude binary sensor's attributes rather than
+    // duplicating that config into the card, so the circle can't drift out
+    // of sync with what the sensor is actually watching. Only drawn when a
+    // radius is actually configured (binary_sensor.py omits the attribute
+    // entirely when the radius filter is disabled).
+    _updateLowAltitudeCircle(map) {
+      if (this._config.show_low_altitude_radius === false) {
+        this._removeLowAltitudeCircle();
+        return;
+      }
+      const entityId = this._config.low_altitude_entity || 'binary_sensor.fr24_low_altitude';
+      const radiusKm = this._hass.states[entityId]?.attributes?.radius_km;
+      if (!Number.isFinite(radiusKm) || radiusKm <= 0) {
+        this._removeLowAltitudeCircle();
+        return;
+      }
+      const cfg = this._hass.config;
+      const center = [cfg.latitude, cfg.longitude];
+      // var(...) with a fallback, resolved against the shadow root's host
+      // element so it still picks up the dashboard's theme rather than
+      // whatever's in scope at the top-level document.
+      const warningColor =
+        getComputedStyle(this).getPropertyValue('--warning-color').trim() || '#ff9800';
+      if (!this._lowAltCircle) {
+        this._lowAltCircle = L.circle(center, {
+          radius: radiusKm * 1000,
+          color: warningColor,
+          weight: 1,
+          dashArray: '4 4',
+          fillColor: warningColor,
+          fillOpacity: 0.06,
+          interactive: false,
+        }).addTo(map);
+      } else {
+        this._lowAltCircle.setLatLng(center);
+        this._lowAltCircle.setRadius(radiusKm * 1000);
+      }
+    }
+
+    _removeLowAltitudeCircle() {
+      if (this._lowAltCircle) {
+        this._lowAltCircle.remove();
+        this._lowAltCircle = null;
+      }
     }
 
     _escape(value) {
@@ -330,6 +483,10 @@
         ['Squawk',       this._escape(f.squawk || '—')],
         ['ICAO',         this._escape(f.icao)],
       ];
+      const emergency = this._emergencyLabel(f);
+      if (emergency) {
+        rows.unshift(['⚠ Emergency', `<span style="color:var(--error-color, #d32f2f)">${this._escape(emergency)}</span>`]);
+      }
       return (
         '<table style="border-collapse:collapse;font-size:13px;min-width:190px">' +
         rows.map(([k, v]) =>
@@ -385,6 +542,7 @@
         for (const icao of Object.keys(this._markers)) {
           this._markers[icao].remove();
           delete this._markers[icao];
+          this._removeTrail(icao);
         }
         return;
       }
@@ -403,32 +561,42 @@
           seen.add(f.icao);
           const html = this._popupHtml(f);
           const existing = this._markers[f.icao];
+          // Computed once per flight per poll and threaded through, rather
+          // than each of iconKey/icon/trail re-deriving it from f.altitude_ft.
+          const color = this._markerColor(f);
+          const iconKey = this._iconKey(f, color);
 
           if (existing) {
             existing.setLatLng([f.latitude, f.longitude]);
-            // Rebuilding the divIcon is wasted work when the heading hasn't
-            // moved, which is most polls for most aircraft.
-            if (existing._frTrackDeg !== f.track_deg) {
-              existing._frTrackDeg = f.track_deg;
-              existing.setIcon(this._icon(f.track_deg));
+            // Rebuilding the divIcon is wasted work when heading, altitude
+            // band and emergency state haven't changed, which is most polls
+            // for most aircraft.
+            if (existing._frIconKey !== iconKey) {
+              existing._frIconKey = iconKey;
+              existing.setIcon(this._icon(f, color));
             }
             existing.getPopup()?.setContent(html);
           } else {
             const marker = L.marker(
               [f.latitude, f.longitude],
-              { icon: this._icon(f.track_deg) }
+              { icon: this._icon(f, color) }
             ).bindPopup(html).addTo(map);
-            marker._frTrackDeg = f.track_deg;
+            marker._frIconKey = iconKey;
             this._markers[f.icao] = marker;
           }
+
+          this._updateTrail(map, f, color);
         }
 
         for (const icao of Object.keys(this._markers)) {
           if (!seen.has(icao)) {
             this._markers[icao].remove();
             delete this._markers[icao];
+            this._removeTrail(icao);
           }
         }
+
+        this._updateLowAltitudeCircle(map);
 
         if (badgeEl) badgeEl.textContent = `${flights.length} aircraft`;
       } catch (err) {

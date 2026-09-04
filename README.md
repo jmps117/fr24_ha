@@ -86,11 +86,18 @@ Optional configuration:
 
 ```yaml
 type: custom:fr24-map-card
-zoom: 9          # initial zoom level (default: 9)
-height: 500px    # card height (default: 500px)
+zoom: 9                          # initial zoom level (default: 9)
+height: 500px                    # card height (default: 500px)
+show_trails: true                # draw each aircraft's recent-position trail (default: true)
+trail_length: 20                 # points kept per trail, oldest dropped first (default: 20)
+color_by_altitude: true          # colour markers/trails red (low) to blue (high) by altitude (default: true)
+show_low_altitude_radius: true   # draw the configured low-altitude radius as a circle (default: true)
+low_altitude_entity: binary_sensor.fr24_low_altitude   # source of the radius, only drawn when a radius is actually configured
 ```
 
 The card loads map tiles from Esri's World Street Map service, which requires the browser viewing the dashboard to have internet access. The HA server itself does not need internet access.
+
+Trails are built up client-side from successive updates — the feeder only ever reports current position, not history — so they reset whenever the card reloads and only ever show recent movement, not a permanent flight log. Aircraft squawking 7500/7600/7700 get a pulsing red ring regardless of the altitude colouring setting.
 
 ## Options
 
