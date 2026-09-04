@@ -4,7 +4,7 @@
   // invalidateSize() instead of pre-computed width) adapted from
   // AlexandrErohin/home-assistant-flightradar24's flightradar24-card.js
   // (MIT licensed, Copyright (c) 2023 AlexandrErohin).
-  const CARD_VERSION = '1.6.2';
+  const CARD_VERSION = '1.6.3';
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -250,12 +250,14 @@
       const zoom = this._config.zoom ?? 9;
       this._map = L.map(mapEl).setView([cfg.latitude, cfg.longitude], zoom);
 
-      // CartoDB tiles — no Referer restrictions, works from local HA instances
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution:
-          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
-          '© <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
+      // CartoDB's free anonymous tiles started requiring an API key (returns
+      // a watermarked "API KEY REQUIRED" placeholder instead of a real map,
+      // confirmed 2026-09-04 — not a WebView-specific issue, plain curl hits
+      // the same watermark). Back to OSM's own tile CDN, which still serves
+      // unauthenticated requests fine.
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: 'abc',
         maxZoom: 19,
       }).addTo(this._map);
 
