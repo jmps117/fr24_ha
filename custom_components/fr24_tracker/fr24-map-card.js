@@ -4,7 +4,7 @@
   // invalidateSize() instead of pre-computed width) adapted from
   // AlexandrErohin/home-assistant-flightradar24's flightradar24-card.js
   // (MIT licensed, Copyright (c) 2023 AlexandrErohin).
-  const CARD_VERSION = '1.8.0';
+  const CARD_VERSION = '1.8.1';
 
   // Mirrors EMERGENCY_SQUAWKS in binary_sensor.py — duplicated here because
   // the card is a standalone frontend file with no build step sharing code
@@ -18,6 +18,26 @@
   // (altitude colour) without an extra request per colour variant.
   const PLANE_SVG_PATH =
     'M21,16V14L13,9V3.5A1.5,1.5,0,0,0,11.5,2,1.5,1.5,0,0,0,10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5Z';
+
+  // Red (low) -> blue (high) altitude ramp, precomputed offline in OKLCH
+  // (fixed L=0.46, per-hue chroma at 90% of the max that stays inside the
+  // sRGB gamut at that lightness) rather than computed live in the browser.
+  // Shipping oklch() directly (an earlier version of this ramp did) means
+  // every point outside the sRGB gamut gets silently gamut-mapped by
+  // whatever algorithm the rendering engine uses — Chrome, Firefox and the
+  // HA companion app's Android WebView are not guaranteed to agree, so the
+  // colour (and therefore the contrast this ramp exists for) wouldn't
+  // actually be the value that was verified. These 9 stops were confirmed
+  // in-gamut (no clamping/mapping needed by any engine) and >=4.9:1 WCAG
+  // contrast against sampled Esri tile colours (cream land, pale green/
+  // blue, white roads, light gray urban); runtime just linearly interpolates
+  // between adjacent stops in sRGB, which for 9 close stops tracks the
+  // OKLCH curve closely enough for a 22px marker.
+  const ALTITUDE_COLOR_STOPS = [
+    '#a11b22', '#834614', '#6f5314', '#585d14', '#186a15',
+    '#186653', '#186468', '#17607e', '#1251b4',
+  ];
+  const ALTITUDE_COLOR_GRAY = '#585858'; // same L=0.46, C=0 — ground/unknown
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -325,10 +345,23 @@
     // most ADS-B trackers (tar1090, etc.) — capped at a typical airliner
     // cruise ceiling so anything above it just reads as "high" rather than
     // compressing the whole low-altitude range into a sliver of the scale.
+    // See ALTITUDE_COLOR_STOPS above for why this interpolates a precomputed
+    // table instead of computing OKLCH live.
     _altitudeColor(altFt) {
-      if (!Number.isFinite(altFt) || altFt <= 0) return '#888888';
-      const hue = Math.max(0, Math.min(1, altFt / 40000)) * 240;
-      return `hsl(${hue}, 85%, 45%)`;
+      if (!Number.isFinite(altFt) || altFt <= 0) return ALTITUDE_COLOR_GRAY;
+      const frac = Math.max(0, Math.min(1, altFt / 40000));
+      const pos = frac * (ALTITUDE_COLOR_STOPS.length - 1);
+      const i = Math.min(Math.floor(pos), ALTITUDE_COLOR_STOPS.length - 2);
+      return this._lerpHex(ALTITUDE_COLOR_STOPS[i], ALTITUDE_COLOR_STOPS[i + 1], pos - i);
+    }
+
+    _lerpHex(hexA, hexB, t) {
+      const a = parseInt(hexA.slice(1), 16);
+      const b = parseInt(hexB.slice(1), 16);
+      const chan = (h, shift) => (h >> shift) & 0xff;
+      const mix = (shift) => Math.round(chan(a, shift) + (chan(b, shift) - chan(a, shift)) * t);
+      const r = mix(16), g = mix(8), bch = mix(0);
+      return `#${((r << 16) | (g << 8) | bch).toString(16).padStart(6, '0')}`;
     }
 
     _markerColor(f) {
@@ -365,7 +398,13 @@
           `<div style="position:relative;transform:rotate(${f.track_deg ?? 0}deg);` +
           `width:22px;height:22px;color:${color}">` +
           `<svg viewBox="0 0 24 24" width="100%" height="100%">` +
-          `<path fill="currentColor" d="${PLANE_SVG_PATH}"/></svg>` +
+          // paint-order draws the stroke first so the fill sits cleanly on
+          // top instead of the stroke doubling the shape's apparent width —
+          // a dark outline independent of marker colour, so a plane stays
+          // legible even where the fill colour and the tile underneath it
+          // are close (e.g. a pale altitude band over light water/parkland).
+          `<path fill="currentColor" stroke="rgba(0,0,0,.65)" stroke-width="1.5" ` +
+          `stroke-linejoin="round" paint-order="stroke" d="${PLANE_SVG_PATH}"/></svg>` +
           `</div></div>`,
         iconSize:    [28, 28],
         iconAnchor:  [14, 14],

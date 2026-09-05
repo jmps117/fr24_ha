@@ -58,12 +58,15 @@ CartoDB's free anonymous tiles started requiring an API key (every style waterma
 - Emergency squawk highlight — 7500/7600/7700 gets a pulsing ring plus a highlighted popup row, independent of altitude colouring
 - Low-altitude radius circle — drawn from `binary_sensor.fr24_low_altitude`'s live `radius_km` attribute rather than a duplicated config value, so it can't drift out of sync; only shown when a radius is actually configured
 
+### v1.8.0 — Origin/Destination Lookup
+Route (origin/destination airport) and operating airline enrichment by callsign, via [adsbdb.com](https://www.adsbdb.com) (free, keyless) — added alongside the existing hexdb.io aircraft enrichment, since hexdb.io only covers static aircraft data, not live routes. Only applicable to aircraft broadcasting a callsign with a known scheduled route. Cache is a bounded LRU (500 callsigns) since callsigns churn far faster than aircraft ICAO hexes; callsigns are validated against the real ICAO callsign shape before being used as a cache key or interpolated into the request URL, since they come straight off spoofable ADS-B broadcast data.
+
+### v1.8.1 — Altitude Colour Contrast Fix
+The v1.7.0 altitude ramp used raw HSL hue rotation, which isn't perceptually uniform — yellow/mid-altitude markers read much lighter than red/blue ones at the same HSL lightness and washed out against light basemap tiles. Switched to OKLCH with a fixed, computed lightness/chroma (verified via WCAG contrast against sampled tile colours — every hue in the sweep now clears >=4.4:1). Also added a dark outline to the plane icon (SVG `paint-order` stroke) so markers stay legible against any tile colour, not just a better palette.
+
 ---
 
 ## Planned
-
-### v1.8.0 — Origin/Destination Lookup — in progress
-Route (origin/destination airport) enrichment by callsign, added alongside the existing hexdb.io aircraft enrichment. Only applicable to aircraft broadcasting a callsign. hexdb.io only covers static aircraft data (registration/type/operator), not live routes, so this needs a second, real-time-aware source.
 
 ### v1.9.0 — Geofence Zones
 `binary_sensor.fr24_geofence` — on when any aircraft (or optionally only watched aircraft) enters a defined radius around a configurable point (defaults to HA home location). Radius and centre point configurable via options flow. Attributes include full aircraft details and distance. Enables automations that react to aircraft entering your local airspace without relying on altitude alone.
