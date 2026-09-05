@@ -64,6 +64,9 @@ Route (origin/destination airport) and operating airline enrichment by callsign,
 ### v1.8.1 — Altitude Colour Contrast Fix
 The v1.7.0 altitude ramp used raw HSL hue rotation, which isn't perceptually uniform — yellow/mid-altitude markers read much lighter than red/blue ones at the same HSL lightness and washed out against light basemap tiles. Switched to OKLCH with a fixed, computed lightness/chroma (verified via WCAG contrast against sampled tile colours — every hue in the sweep now clears >=4.4:1). Also added a dark outline to the plane icon (SVG `paint-order` stroke) so markers stay legible against any tile colour, not just a better palette.
 
+### v1.8.2 — Altitude Colour Contrast Fix, Take 2
+v1.8.1's sample only covered flat land/water/road tile colours; Esri's World Street Map also lays a tan/khaki hillshade over hilly and mountainous terrain that reads darker than the flat fills, and every stop in the v1.8.1 ramp fell to 3.1-4.2:1 against it — visibly worse contrast on earthy terrain, not better. Re-picked the fixed OKLCH lightness (0.46 -> 0.35) after resampling real tiles over the Himalayas, Andes, Alps, Rockies, Sahara and Greenland; every stop now clears >=4.9:1 against the darkest hillshade tone actually observed.
+
 ---
 
 ## Planned

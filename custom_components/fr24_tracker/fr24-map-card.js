@@ -4,7 +4,7 @@
   // invalidateSize() instead of pre-computed width) adapted from
   // AlexandrErohin/home-assistant-flightradar24's flightradar24-card.js
   // (MIT licensed, Copyright (c) 2023 AlexandrErohin).
-  const CARD_VERSION = '1.8.1';
+  const CARD_VERSION = '1.8.2';
 
   // Mirrors EMERGENCY_SQUAWKS in binary_sensor.py — duplicated here because
   // the card is a standalone frontend file with no build step sharing code
@@ -20,24 +20,36 @@
     'M21,16V14L13,9V3.5A1.5,1.5,0,0,0,11.5,2,1.5,1.5,0,0,0,10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5Z';
 
   // Red (low) -> blue (high) altitude ramp, precomputed offline in OKLCH
-  // (fixed L=0.46, per-hue chroma at 90% of the max that stays inside the
+  // (fixed L=0.35, per-hue chroma at 90% of the max that stays inside the
   // sRGB gamut at that lightness) rather than computed live in the browser.
   // Shipping oklch() directly (an earlier version of this ramp did) means
   // every point outside the sRGB gamut gets silently gamut-mapped by
   // whatever algorithm the rendering engine uses — Chrome, Firefox and the
   // HA companion app's Android WebView are not guaranteed to agree, so the
   // colour (and therefore the contrast this ramp exists for) wouldn't
-  // actually be the value that was verified. These 9 stops were confirmed
-  // in-gamut (no clamping/mapping needed by any engine) and >=4.9:1 WCAG
-  // contrast against sampled Esri tile colours (cream land, pale green/
-  // blue, white roads, light gray urban); runtime just linearly interpolates
-  // between adjacent stops in sRGB, which for 9 close stops tracks the
-  // OKLCH curve closely enough for a 22px marker.
+  // actually be the value that was verified.
+  //
+  // L=0.46 (the first "fixed" version) was verified against the wrong
+  // sample: cream land, pale green/blue water, white roads. Esri's World
+  // Street Map also lays a tan/khaki hillshade over hilly and mountainous
+  // terrain (sampled worst case ~#c0c0a0), which is *darker* than the flat
+  // fills, and every L=0.46 stop fell to 3.1-4.2:1 against it — visibly
+  // washed out, exactly the "earthy tiles, worse contrast" regression this
+  // fix addresses. L=0.35 was picked by resampling real tiles over the
+  // Himalayas, Andes, Alps, Rockies, Sahara and Greenland (not just flat
+  // terrain) and choosing the lightness where every stop clears 4.5:1
+  // against the darkest hillshade tone actually seen.
+  //
+  // These 9 stops were confirmed in-gamut (no clamping/mapping needed by
+  // any engine) and >=4.9:1 WCAG contrast against that resampled Esri
+  // palette; runtime just linearly interpolates between adjacent stops in
+  // sRGB, which for 9 close stops tracks the OKLCH curve closely enough for
+  // a 22px marker.
   const ALTITUDE_COLOR_STOPS = [
-    '#a11b22', '#834614', '#6f5314', '#585d14', '#186a15',
-    '#186653', '#186468', '#17607e', '#1251b4',
+    '#6e0f14', '#592e0a', '#4b370a', '#3b3e0b', '#0d470b',
+    '#0d4537', '#0d4346', '#0d4055', '#09367c',
   ];
-  const ALTITUDE_COLOR_GRAY = '#585858'; // same L=0.46, C=0 — ground/unknown
+  const ALTITUDE_COLOR_GRAY = '#3a3a3a'; // same L=0.35, C=0 — ground/unknown
 
   const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
