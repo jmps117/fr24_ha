@@ -79,10 +79,6 @@ class FR24TrackerEntity(CoordinatorEntity, TrackerEntity):
         return SourceType.GPS
 
     @property
-    def battery_level(self) -> int | None:
-        return None
-
-    @property
     def location_accuracy(self) -> int:
         return 0
 

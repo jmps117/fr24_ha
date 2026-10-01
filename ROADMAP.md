@@ -67,6 +67,9 @@ The v1.7.0 altitude ramp used raw HSL hue rotation, which isn't perceptually uni
 ### v1.8.2 — Altitude Colour Contrast Fix, Take 2
 v1.8.1's sample only covered flat land/water/road tile colours; Esri's World Street Map also lays a tan/khaki hillshade over hilly and mountainous terrain that reads darker than the flat fills, and every stop in the v1.8.1 ramp fell to 3.1-4.2:1 against it — visibly worse contrast on earthy terrain, not better. Re-picked the fixed OKLCH lightness (0.46 -> 0.35) after resampling real tiles over the Himalayas, Andes, Alps, Rockies, Sahara and Greenland; every stop now clears >=4.9:1 against the darkest hillshade tone actually observed.
 
+### v1.8.3 — Device Tracker Deprecation Fix
+Dropped the `battery_level` override on the aircraft `device_tracker` entities. HA logs a deprecation warning for any tracker that overrides it (unsupported from HA 2027.7), and ours only ever returned `None` — aircraft have no battery to report — so removing it changes no state or attributes.
+
 ---
 
 ## Planned
