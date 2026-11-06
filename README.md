@@ -28,12 +28,21 @@ A Home Assistant custom integration that tracks aircraft from your local FR24 fe
 - A running [FR24 feeder](https://www.flightradar24.com/share-your-data) with its local web UI accessible on your network (default port 8754)
 - Home Assistant 2023.6 or newer
 
-## Installation via HACS
+## Installation via the Marketplace (Home Assistant 2026.11 or newer)
+
+1. Go to **Settings → Marketplace** and select **Add from link**. This needs a GitHub connection, set up under the Marketplace integration's **Reconfigure** option.
+2. Enter `https://github.com/jmps117/fr24_ha` and select **Add**. If asked for the type, choose **Integration** and add it again.
+3. Install **FR24 Flight Tracker**
+4. Restart Home Assistant
+
+## Installation via HACS (Home Assistant 2026.10 or older)
 
 1. In HACS → **Integrations** → click the three-dot menu → **Custom repositories**
 2. Add `https://github.com/jmps117/fr24_ha` and select category **Integration**
 3. Install **FR24 Flight Tracker**
 4. Restart Home Assistant
+
+If you already installed it through HACS, upgrading to Home Assistant 2026.11 moves it to the Marketplace automatically.
 
 ## Manual installation
 
