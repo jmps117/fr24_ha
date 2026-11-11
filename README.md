@@ -159,3 +159,13 @@ action:
 - Route lookups (origin/destination) are made once per callsign per session — adsbdb.com is queried at most 4 requests concurrently; a miss (no known route, or no callsign) is cached too, so it isn't retried every poll
 - adsbdb.com's route coverage is scheduled commercial services with recognisable callsigns — charter, cargo, ferry/positioning, general aviation, business jets and military movements typically won't resolve to a route
 - The plane icon SVG and map card JS are redeployed on every HA restart to keep them in sync with the installed version
+
+## Development
+
+```sh
+uv sync
+uv run pytest                     # tests (pytest-homeassistant-custom-component)
+uv run ruff check custom_components/ tests/ && uv run ruff format --check custom_components/ tests/
+```
+
+CI runs the same three on every push to `main`.

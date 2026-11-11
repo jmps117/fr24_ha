@@ -1,4 +1,4 @@
-name: Lint
+name: Lint & Test
 
 on:
   push:
@@ -20,7 +20,10 @@ jobs:
         run: uv sync --frozen
 
       - name: Ruff check
-        run: uv run ruff check custom_components/
+        run: uv run ruff check custom_components/ tests/
 
       - name: Ruff format
-        run: uv run ruff format --check custom_components/
+        run: uv run ruff format --check custom_components/ tests/
+
+      - name: Tests
+        run: uv run pytest -q
