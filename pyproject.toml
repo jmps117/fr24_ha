@@ -2,7 +2,7 @@
 name = "fr24-tracker"
 version = "1.0.0"
 description = "FR24 Flight Tracker — Home Assistant custom integration"
-requires-python = ">=3.12"
+requires-python = ">=3.14.2"
 dependencies = []
 
 [dependency-groups]
